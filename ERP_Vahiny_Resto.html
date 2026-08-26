@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vahiny — Contrôle Restauration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0B211E;
+  --sidebar:#0F2B27;
+  --surface:#123430;
+  --paper:#F5F0E3;
+  --paper2:#FFFFFF;
+  --ink:#12201C;
+  --text2:#374943;
+  --text3:#5C6E67;
+  --border:rgba(22,35,31,.16);
+  --border-dark:rgba(255,255,255,.14);
+  --teal:#1F9D82;
+  --teal-deep:#116552;
+  --vanilla:#E8B968;
+  --vanilla-deep:#A67A2E;
+  --coral:#D9432A;
+  --sky:#2A87A6;
+  --font-display:'Fraunces', serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'IBM Plex Mono', monospace;
+  --radius:14px;
+  --shadow:0 8px 24px rgba(11,33,30,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font-body);font-size:14.5px;line-height:1.5;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased}
+h1,h2,h3,.font-display{font-family:var(--font-display)}
+.mono{font-family:var(--font-mono)}
+button,input,select{font-family:inherit}
+.shell{display:flex;min-height:100vh}
+
+/* ---------- Sidebar ---------- */
+.sidebar{width:236px;background:var(--sidebar);color:#EFEAE0;flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;transition:transform .25s ease}
+.logo{padding:26px 22px 18px;border-bottom:1px solid var(--border-dark)}
+.logo-title{font-family:var(--font-display);font-weight:600;font-size:21px;letter-spacing:.2px;display:flex;align-items:center;gap:8px}
+.logo-title .dot{width:8px;height:8px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 4px rgba(31,157,130,.25)}
+.logo-sub{font-size:11.5px;color:#B7C4BD;margin-top:4px;letter-spacing:.4px;text-transform:uppercase}
+.nav{padding:14px 12px;flex:1;overflow-y:auto}
+.nav-section{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#93A69D;margin:18px 10px 7px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;font-size:14.5px;font-weight:500;color:#E4ECE7;cursor:pointer;transition:background .15s,color .15s}
+.nav-item:hover{background:rgba(255,255,255,.08)}
+.nav-item.active{background:var(--teal);color:#082A22;font-weight:700}
+.nav-icon{width:20px;text-align:center;font-size:15px}
+.sidebar-footer{padding:14px 22px;font-size:11.5px;color:#93A69D;border-top:1px solid var(--border-dark)}
+
+/* ---------- Main ---------- */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:5;background:var(--paper);display:flex;align-items:center;justify-content:space-between;padding:16px 26px;border-bottom:1px solid var(--border)}
+.btn-menu{display:none;background:none;border:none;font-size:18px;cursor:pointer;color:var(--ink)}
+.page-title{font-family:var(--font-display);font-size:22px;font-weight:600}
+.topbar-right{display:flex;align-items:center;gap:14px}
+.badge-live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.4px;color:var(--teal-deep);background:rgba(31,157,130,.12);padding:5px 10px;border-radius:20px}
+.badge-live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--teal);animation:pulse 1.8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.content{padding:22px 26px 60px}
+.page{display:none}
+.page.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---------- KPI ticket cards (signature element) ---------- */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:14px;margin-bottom:22px}
+.kpi{position:relative;background:var(--paper2);border-radius:10px;padding:17px 17px 15px;border:1px solid var(--border);border-left:3px solid var(--border);box-shadow:var(--shadow)}
+.kpi::before,.kpi::after{content:'';position:absolute;width:14px;height:14px;background:var(--paper);border-radius:50%;top:50%;transform:translateY(-50%)}
+.kpi::before{left:-7px}
+.kpi::after{right:-7px}
+.kpi-label{font-size:11.5px;color:var(--text2);display:flex;align-items:center;gap:6px;margin-bottom:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.kpi-value{font-family:var(--font-mono);font-size:24px;font-weight:600;letter-spacing:-.3px;color:var(--ink)}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:5px;font-weight:500}
+.kpi-delta{font-size:11.5px;font-weight:700;margin-top:5px;display:inline-flex;align-items:center;gap:3px}
+.kpi-delta.up{color:var(--teal-deep)}
+.kpi-delta.down{color:var(--coral)}
+.kpi.accent-teal{border-left-color:var(--teal)}
+.kpi.accent-teal .kpi-value{color:var(--teal-deep)}
+.kpi.accent-coral{border-left-color:var(--coral)}
+.kpi.accent-coral .kpi-value{color:var(--coral)}
+.kpi.accent-vanilla{border-left-color:var(--vanilla)}
+.kpi.accent-vanilla .kpi-value{color:var(--vanilla-deep)}
+.kpi.accent-sky{border-left-color:var(--sky)}
+.kpi.accent-sky .kpi-value{color:var(--sky)}
+.kpi-tear{border-top:1px dashed var(--border);margin-top:10px;padding-top:8px}
+
+/* ---------- Generic layout blocks ---------- */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid4{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.section-title{font-family:var(--font-display);font-weight:600;font-size:16.5px}
+.card,.table-wrap{background:var(--paper2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.chart-box{background:var(--paper2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.table-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.table-wrap{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);padding:12px 16px;border-bottom:2px solid var(--border);white-space:nowrap;background:rgba(22,35,31,.03)}
+.tbl td{padding:12px 16px;border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl tbody tr:nth-child(even){background:rgba(22,35,31,.02)}
+.tbl tbody tr:hover{background:rgba(31,157,130,.07)}
+.tbl tbody tr:last-child td{border-bottom:none}
+
+/* ---------- Buttons ---------- */
+.btn{border:none;border-radius:9px;padding:9px 16px;font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:transform .1s,opacity .15s}
+.btn:active{transform:scale(.97)}
+.btn-teal{background:var(--teal);color:#082A22}
+.btn-teal:hover{opacity:.88}
+.btn-vanilla{background:var(--vanilla);color:#2E2007}
+.btn-vanilla:hover{opacity:.88}
+.btn-outline{background:var(--paper2);border:1.5px solid var(--border);color:var(--ink);font-weight:600}
+.btn-outline:hover{background:rgba(22,35,31,.05);border-color:var(--teal)}
+.btn-danger{background:rgba(232,89,63,.1);color:var(--coral)}
+.btn-danger:hover{background:rgba(232,89,63,.18)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-icon{padding:6px 9px;border-radius:7px}
+
+/* ---------- Toolbar / search ---------- */
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:200px}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.5}
+input[type=text],input[type=search],input[type=number],input[type=date],select{
+  background:var(--paper2);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;color:var(--ink);width:100%;
+}
+.search-wrap input{padding-left:34px}
+input:focus,select:focus{outline:2px solid var(--teal);outline-offset:1px}
+
+/* ---------- POS ---------- */
+.pos-layout{display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start}
+.pos-catalog{background:var(--paper2);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+.pos-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px}
+.pos-subtitle{font-size:12px;color:var(--text3);margin-top:3px}
+.pos-toolbar{display:flex;gap:10px;margin-bottom:14px}
+.pos-toolbar select{max-width:180px}
+.pos-products{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;max-height:560px;overflow-y:auto;padding-right:4px}
+.pos-card{border:1px solid var(--border);border-radius:11px;padding:12px;cursor:pointer;transition:border-color .15s,transform .1s;background:var(--paper)}
+.pos-card:hover{border-color:var(--teal);transform:translateY(-1px)}
+.pos-card-cat{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--teal-deep);font-weight:700}
+.pos-card-name{font-size:13px;font-weight:600;margin:5px 0 6px;line-height:1.25}
+.pos-card-price{font-family:var(--font-mono);font-size:14px;color:var(--vanilla-deep);font-weight:600}
+.pos-cart{position:sticky;top:80px;background:var(--sidebar);border-radius:var(--radius);color:#EFEAE0;overflow:hidden;box-shadow:var(--shadow)}
+.pos-cart-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border-dark)}
+.pos-cart-head span#posCartCount{display:block;font-size:11px;color:#9FB0A9;margin-top:2px}
+.pos-cart-items{max-height:280px;overflow-y:auto;padding:8px 14px}
+.pos-cart-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--border-dark)}
+.pos-cart-item:last-child{border-bottom:none}
+.pos-item-name{font-size:12.5px;font-weight:600}
+.pos-item-price{font-size:11px;color:#9FB0A9;font-family:var(--font-mono)}
+.qty-ctrl{display:flex;align-items:center;gap:6px}
+.qty-btn{width:22px;height:22px;border-radius:6px;border:1px solid var(--border-dark);background:transparent;color:#EFEAE0;cursor:pointer;font-size:13px;line-height:1}
+.qty-val{font-family:var(--font-mono);font-size:12.5px;min-width:16px;text-align:center}
+.pos-empty{padding:30px 10px;text-align:center;font-size:12.5px;color:#7C8F87}
+.pos-summary{padding:16px 18px;border-top:1px solid var(--border-dark);display:flex;flex-direction:column;gap:10px}
+.pos-summary>div{display:flex;justify-content:space-between;font-size:13px}
+.pos-summary strong{font-family:var(--font-mono)}
+.pos-total{font-size:16px;padding-top:8px;border-top:1px dashed var(--border-dark)}
+.pos-total strong{color:var(--vanilla);font-size:19px}
+.field{display:flex;flex-direction:column;gap:5px;font-size:11.5px;color:#9FB0A9}
+.field select,.field input{background:rgba(255,255,255,.06);border:1px solid var(--border-dark);color:#EFEAE0}
+.pos-change{display:flex;justify-content:space-between;font-size:12.5px;color:#9FB0A9}
+.pos-pay{width:100%;justify-content:center;padding:12px;font-size:14px}
+.pos-print-last{width:100%;justify-content:center;color:#D6E0DA;border-color:var(--border-dark)}
+.auto-sync{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--teal);background:rgba(31,157,130,.35);border:1px solid rgba(31,157,130,.5);padding:4px 8px;border-radius:6px;margin-top:8px}
+
+/* ---------- Ventes source badge ---------- */
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.3px}
+.tag-pos{background:rgba(31,157,130,.12);color:var(--teal-deep)}
+.tag-manuel{background:rgba(63,169,201,.12);color:#2A7A92}
+
+/* ---------- Modal ---------- */
+.modal-overlay{position:fixed;inset:0;background:rgba(11,33,30,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--paper2);border-radius:16px;width:100%;max-width:440px;padding:24px;position:relative;max-height:88vh;overflow-y:auto}
+.modal-title{font-family:var(--font-display);font-size:18px;font-weight:600}
+.modal-close{position:absolute;top:18px;right:18px;background:none;border:none;font-size:16px;cursor:pointer;color:var(--text3)}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.mfield{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;font-size:12px;color:var(--text2)}
+.mfield label{font-weight:600}
+
+/* ---------- Toast ---------- */
+.toast-container{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:60}
+.toast{background:var(--sidebar);color:#EFEAE0;padding:12px 16px;border-radius:10px;font-size:13px;box-shadow:0 8px 20px rgba(0,0,0,.25);animation:toastIn .2s ease;border-left:3px solid var(--teal)}
+.toast.error{border-left-color:var(--coral)}
+.toast.info{border-left-color:var(--sky)}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---------- Alerts / guide ---------- */
+.alert-row{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);font-size:12.5px}
+.alert-row:last-child{border-bottom:none}
+.alert-badge{background:rgba(232,89,63,.1);color:var(--coral);font-weight:700;font-size:11px;padding:3px 8px;border-radius:6px}
+.guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.guide-card{background:var(--paper);border:1px solid var(--border);border-radius:11px;padding:14px}
+.guide-card-title{font-weight:700;font-size:13px;margin-bottom:5px}
+.guide-card-text{font-size:12px;color:var(--text2);line-height:1.5}
+.actions-cell{display:flex;gap:6px}
+
+/* ---------- Ticket imprimable ---------- */
+.receipt{display:none}
+@media print{
+  body *{visibility:hidden}
+  .receipt,.receipt *{visibility:visible}
+  .receipt{display:block;position:absolute;top:0;left:0;width:76mm;padding:6mm;font-family:var(--font-mono);color:#000;background:#fff}
+  .receipt-title{font-size:15px;font-weight:700;text-align:center;letter-spacing:.5px}
+  .receipt-sub{font-size:10px;text-align:center;margin-bottom:8px}
+  .receipt hr{border:none;border-top:1px dashed #000;margin:8px 0}
+  .receipt-row{display:flex;justify-content:space-between;font-size:11px;margin:3px 0}
+  .receipt-line{font-size:11px;margin:5px 0}
+  .receipt-total{font-size:13px;font-weight:700}
+  .receipt-foot{text-align:center;font-size:10px;margin-top:10px}
+}
+
+@media(max-width:960px){
+  .sidebar{position:fixed;left:0;z-index:40;transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .btn-menu{display:block}
+  .pos-layout{grid-template-columns:1fr}
+  .pos-cart{position:static}
+  .grid2,.grid4{grid-template-columns:1fr}
+  .guide-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ============================================================ SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-title"><span class="dot"></span>Vahiny</div>
+    <div class="logo-sub">Contrôle Restauration</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Analyse</div>
+    <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="nav-section">Vente</div>
+    <div class="nav-item" onclick="showPage('pos')" id="nav-pos"><span class="nav-icon">🧾</span> POS / Caisse</div>
+    <div class="nav-section">Gestion</div>
+    <div class="nav-item" onclick="showPage('ventes')" id="nav-ventes"><span class="nav-icon">💰</span> Ventes</div>
+    <div class="nav-item" onclick="showPage('stock')" id="nav-stock"><span class="nav-icon">📦</span> Stock</div>
+    <div class="nav-section">Catalogue</div>
+    <div class="nav-item" onclick="showPage('recettes')" id="nav-recettes"><span class="nav-icon">📋</span> Fiches Techniques</div>
+    <div class="nav-item" onclick="showPage('produits')" id="nav-produits"><span class="nav-icon">🛒</span> Produits</div>
+    <div class="nav-section">Système</div>
+    <div class="nav-item" onclick="showPage('parametres')" id="nav-parametres"><span class="nav-icon">⚙️</span> Paramètres</div>
+  </nav>
+  <div class="sidebar-footer">v2.0 — Madagascar</div>
+</aside>
+
+<!-- ============================================================ MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="btn-menu" onclick="toggleSidebar()">☰</button>
+      <div class="page-title" id="pageTitle">Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <span id="topDate" style="font-size:12px;color:var(--text3)"></span>
+      <span class="badge-live">LIVE</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+  <!-- ===== DASHBOARD ===== -->
+  <div id="page-dashboard" class="page active">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:260px">
+        <label style="font-size:11px;color:var(--text3);white-space:nowrap">Du</label>
+        <input type="date" id="dashDateDebut" onchange="UI.renderDashboard()" style="width:140px">
+        <label style="font-size:11px;color:var(--text3);white-space:nowrap">Au</label>
+        <input type="date" id="dashDateFin" onchange="UI.renderDashboard()" style="width:140px">
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="resetDashFilter()">Tout afficher</button>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi accent-vanilla"><div class="kpi-label">Chiffre d'affaires</div><div class="kpi-value" id="kpiCA">—</div></div>
+      <div class="kpi accent-coral"><div class="kpi-label">Coût matière</div><div class="kpi-value" id="kpiCout">—</div></div>
+      <div class="kpi accent-teal"><div class="kpi-label">Marge brute</div><div class="kpi-value" id="kpiMarge">—</div><div class="kpi-sub" id="kpiMargePct">—</div></div>
+      <div class="kpi"><div class="kpi-label">Food Cost %</div><div class="kpi-value" id="kpiFoodCost">—</div><div class="kpi-sub">Cible &lt; 30%</div></div>
+      <div class="kpi accent-sky"><div class="kpi-label">Couverts vendus</div><div class="kpi-value" id="kpiCouverts">—</div></div>
+      <div class="kpi"><div class="kpi-label">Ticket moyen</div><div class="kpi-value" id="kpiTicket">—</div></div>
+      <div class="kpi"><div class="kpi-label">Valeur stock</div><div class="kpi-value" id="kpiStock">—</div></div>
+      <div class="kpi accent-vanilla"><div class="kpi-label">CA aujourd'hui</div><div class="kpi-value" id="kpiCAJour">—</div><div class="kpi-delta" id="kpiCADelta">—</div></div>
+      <div class="kpi"><div class="kpi-label">Ventes aujourd'hui</div><div class="kpi-value" id="kpiVentesJour">—</div><div class="kpi-sub">transactions</div></div>
+      <div class="kpi accent-coral"><div class="kpi-label">Alertes stock</div><div class="kpi-value" id="kpiAlertesStock">—</div><div class="kpi-sub">produits sous seuil</div></div>
+      <div class="kpi accent-teal"><div class="kpi-label">Recette star</div><div class="kpi-value" id="kpiTopRecette" style="font-size:15px">—</div><div class="kpi-sub" id="kpiTopRecetteSub">—</div></div>
+      <div class="kpi"><div class="kpi-label">Heure de pointe</div><div class="kpi-value" id="kpiHeurePointe">—</div><div class="kpi-sub">volume de ventes max</div></div>
+    </div>
+
+    <div class="grid2" style="margin-bottom:20px">
+      <div>
+        <div class="section-head"><div class="section-title">CA par jour (14 derniers jours)</div></div>
+        <div class="chart-box" style="height:220px"><canvas id="chartCA"></canvas></div>
+      </div>
+      <div>
+        <div class="section-head"><div class="section-title">Répartition CA par recette</div></div>
+        <div class="chart-box" style="height:220px"><canvas id="chartFC"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-bottom:20px">
+      <div>
+        <div class="section-head"><div class="section-title">Ventes par heure</div></div>
+        <div class="chart-box" style="height:200px"><canvas id="chartHeures"></canvas></div>
+      </div>
+      <div>
+        <div class="section-head"><div class="section-title">Ventes par mode de paiement</div></div>
+        <div class="chart-box" style="height:200px"><canvas id="chartPaiement"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <div class="section-head"><div class="section-title">Performance par recette</div></div>
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead><tr><th>Recette</th><th>Qté</th><th>CA</th><th>Coût</th><th>Marge</th><th>Food Cost</th></tr></thead>
+            <tbody id="tbodyDashRecette"></tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="section-head"><div class="section-title">Alertes stock</div></div>
+        <div class="table-wrap" id="dashAlertes"></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ===== POS / CAISSE ===== -->
+  <div id="page-pos" class="page">
+    <div class="pos-layout">
+      <section class="pos-catalog">
+        <div class="pos-head">
+          <div>
+            <div class="section-title">Caisse — prise de commande</div>
+            <div class="pos-subtitle">Sélectionnez les plats, ajustez les quantités puis encaissez.</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="POS.clearCart()">Vider le panier</button>
+        </div>
+        <div class="pos-toolbar">
+          <input id="posSearch" type="search" placeholder="Rechercher un plat..." oninput="POS.renderProducts()">
+          <select id="posCategory" onchange="POS.renderProducts()">
+            <option value="">Toutes les catégories</option>
+            <option value="Food">Food</option>
+            <option value="Boisson">Boisson</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
+        <div id="posProducts" class="pos-products"></div>
+      </section>
+      <aside class="pos-cart">
+        <div class="pos-cart-head">
+          <div>
+            <strong>Commande</strong>
+            <span id="posCartCount">0 article</span>
+          </div>
+          <span class="badge-live">CAISSE</span>
+        </div>
+        <div id="posCartItems" class="pos-cart-items"></div>
+        <div class="pos-summary">
+          <div><span>Sous-total</span><strong id="posSubtotal">0 Ar</strong></div>
+          <div class="pos-total"><span>TOTAL</span><strong id="posTotal">0 Ar</strong></div>
+          <label class="field">
+            <span>Mode de paiement</span>
+            <select id="posPayment">
+              <option value="Espèces">Espèces</option>
+              <option value="Mobile Money">Mobile Money</option>
+              <option value="Carte">Carte</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Montant reçu</span>
+            <input type="number" id="posReceived" min="0" step="1" value="0" oninput="POS.updateChange()">
+          </label>
+          <div class="pos-change"><span>Monnaie</span><strong id="posChange">0 Ar</strong></div>
+          <button class="btn btn-vanilla pos-pay" onclick="POS.checkout()">Encaisser &amp; imprimer</button>
+          <button class="btn btn-outline pos-print-last" onclick="POS.printLastTicket()">Imprimer le dernier ticket</button>
+          <div class="auto-sync">⇄ Chaque encaissement est enregistré automatiquement dans Ventes et met à jour le Stock</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ===== VENTES ===== -->
+  <div id="page-ventes" class="page">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" placeholder="Rechercher une recette..." id="searchVente" oninput="UI.renderVentes()">
+      </div>
+      <input type="date" id="venteDateDebut" onchange="UI.renderVentes()" style="width:140px">
+      <input type="date" id="venteDateFin" onchange="UI.renderVentes()" style="width:140px">
+      <button class="btn btn-vanilla" onclick="UI.modalVente()">+ Nouvelle vente</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="section-title">Historique des ventes</div>
+        <div>CA total filtré : <strong id="ventesTotalCA" style="color:var(--vanilla-deep)">—</strong></div>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>ID</th><th>Date</th><th>Recette</th><th>Qté</th><th>Prix unit.</th><th>CA</th><th>Coût mat.</th><th>Marge</th><th>Food Cost</th><th>Paiement</th><th>Origine</th><th></th></tr></thead>
+        <tbody id="tbodyVentes"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== STOCK ===== -->
+  <div id="page-stock" class="page">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" placeholder="Rechercher un produit..." id="searchStock" oninput="UI.renderStock()">
+      </div>
+      <button class="btn btn-outline" onclick="UI.modalMouvement()">+ Mouvement manuel</button>
+    </div>
+    <div class="table-wrap" style="margin-bottom:20px">
+      <div class="table-header">
+        <div class="section-title">État du stock</div>
+        <div>Valeur totale : <strong id="stockValeurTotal" style="color:var(--vanilla-deep)">—</strong></div>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>ID</th><th>Produit</th><th>Unité</th><th>Stock init.</th><th>Entrées</th><th>Sorties</th><th>Stock final</th><th>Valeur</th><th></th></tr></thead>
+        <tbody id="tbodyStock"></tbody>
+      </table>
+    </div>
+    <div class="section-head"><div class="section-title">Derniers mouvements</div></div>
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead><tr><th>Date</th><th>Produit</th><th>Type</th><th>Quantité</th><th>Motif</th></tr></thead>
+        <tbody id="tbodyMvt"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== FICHES TECHNIQUES ===== -->
+  <div id="page-recettes" class="page">
+    <div class="toolbar">
+      <button class="btn btn-vanilla" onclick="UI.modalRecette()">+ Nouvelle recette</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-header"><div class="section-title">Fiches techniques &amp; coûts matière</div></div>
+      <table class="tbl">
+        <thead><tr><th>ID</th><th>Nom recette</th><th>Ingrédients</th><th>Coût matière</th><th>Prix vente</th><th>Marge</th><th>Food Cost</th><th>Actions</th></tr></thead>
+        <tbody id="tbodyRecettes"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== PRODUITS ===== -->
+  <div id="page-produits" class="page">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" placeholder="Rechercher..." id="searchProduit" oninput="UI.renderProduits()">
+      </div>
+      <select id="filterCatProduit" onchange="UI.renderProduits()" style="width:140px">
+        <option value="">Toutes catégories</option>
+        <option value="Food">Food</option>
+        <option value="Boisson">Boisson</option>
+        <option value="Autre">Autre</option>
+      </select>
+      <button class="btn btn-vanilla" onclick="UI.modalProduit()">+ Nouveau produit</button>
+    </div>
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead><tr><th>ID</th><th>Produit</th><th>Catégorie</th><th>Unité</th><th>Prix achat</th><th>Fournisseur</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody id="tbodyProduits"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== PARAMÈTRES ===== -->
+  <div id="page-parametres" class="page">
+    <div class="grid2">
+      <div class="table-wrap">
+        <div class="table-header"><div class="section-title">Données</div></div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+          <p style="font-size:13px;color:var(--text2);line-height:1.6">Toutes les données sont sauvegardées dans votre navigateur (localStorage). Exportez régulièrement pour sauvegarder.</p>
+          <button class="btn btn-outline" onclick="Store.exportJSON()">⬇ Exporter les données (JSON)</button>
+          <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">⬆ Importer des données (JSON)</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+          <hr style="border-color:var(--border)">
+          <label class="mfield" style="margin:0">
+            <label style="font-weight:600">Seuil d'alerte stock (unités)</label>
+            <input type="number" id="seuilAlerte" min="0" step="1" onchange="saveSeuil()">
+          </label>
+          <hr style="border-color:var(--border)">
+          <button class="btn btn-danger" onclick="resetData()">🗑 Réinitialiser toutes les données</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><div class="section-title">Statistiques</div></div>
+        <div style="padding:16px 20px" id="sysStats"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <div class="section-head"><div class="section-title">Guide d'utilisation</div></div>
+      <div class="table-wrap">
+        <div style="padding:20px">
+          <div class="guide-grid">
+            <div class="guide-card">
+              <div class="guide-card-title">📊 Dashboard</div>
+              <div class="guide-card-text">Visualisez le CA, food cost, marge, tendances horaires et alertes stock en temps réel. Filtrez par période.</div>
+            </div>
+            <div class="guide-card">
+              <div class="guide-card-title">🧾 POS / Caisse</div>
+              <div class="guide-card-text">Chaque encaissement crée automatiquement une vente dans le module Ventes et décrémente le Stock — aucune saisie double.</div>
+            </div>
+            <div class="guide-card">
+              <div class="guide-card-title">💰 Ventes</div>
+              <div class="guide-card-text">Historique complet : ventes issues du POS (badge POS) et saisies manuelles (badge Manuel).</div>
+            </div>
+            <div class="guide-card">
+              <div class="guide-card-title">📦 Stock</div>
+              <div class="guide-card-text">Suivez entrées/sorties. Les sorties POS apparaissent automatiquement dans les mouvements.</div>
+            </div>
+            <div class="guide-card">
+              <div class="guide-card-title">📋 Fiches Techniques</div>
+              <div class="guide-card-text">Définissez vos recettes et leurs ingrédients. Le coût matière est calculé automatiquement.</div>
+            </div>
+            <div class="guide-card">
+              <div class="guide-card-title">🛒 Produits</div>
+              <div class="guide-card-text">Gérez votre catalogue de matières premières avec les prix d'achat fournisseur.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ============================================================ MODAL -->
+<div class="modal-overlay" id="appModal">
+<div class="modal">
+  <div class="modal-title" id="modalTitle"></div>
+  <button class="modal-close" onclick="UI.closeModal()">✕</button>
+  <div id="modalBody" style="margin-top:16px"></div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" onclick="UI.closeModal()">Annuler</button>
+    <button class="btn btn-vanilla" id="modalSaveBtn">Enregistrer</button>
+  </div>
+</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- TICKET IMPRIMABLE (visible uniquement à l'impression) -->
+<div class="receipt" id="receiptArea"></div>
+
+<script>
+// ============================================================
+// STORE — data model, persistence, and the POS -> Ventes bridge
+// ============================================================
+const Store = (() => {
+  const KEY = 'vahiny_resto_v2';
+  let db = { produits: [], recettes: [], ventes: [], mouvements: [], seuilAlerte: 5 };
+
+  function uid(prefix) { return prefix + '-' + Math.random().toString(36).slice(2,7).toUpperCase(); }
+
+  function seed() {
+    const produits = [
+      { id:'P-0001', nom:'Riz blanc', categorie:'Food', unite:'kg', prixAchat:2200, fournisseur:'Grossiste Anosibe', stockInit:80, actif:true },
+      { id:'P-0002', nom:'Poulet fermier', categorie:'Food', unite:'kg', prixAchat:14000, fournisseur:'Ferme Ambohijanaka', stockInit:35, actif:true },
+      { id:'P-0003', nom:'Zébu (viande)', categorie:'Food', unite:'kg', prixAchat:19000, fournisseur:'Boucherie Analakely', stockInit:22, actif:true },
+      { id:'P-0004', nom:'Tomates', categorie:'Food', unite:'kg', prixAchat:2500, fournisseur:'Marché Andravoahangy', stockInit:18, actif:true },
+      { id:'P-0005', nom:'Oignons', categorie:'Food', unite:'kg', prixAchat:2000, fournisseur:'Marché Andravoahangy', stockInit:20, actif:true },
+      { id:'P-0006', nom:'Huile végétale', categorie:'Food', unite:'l', prixAchat:9000, fournisseur:'Grossiste Anosibe', stockInit:14, actif:true },
+      { id:'P-0007', nom:'THB (bière)', categorie:'Boisson', unite:'unité', prixAchat:2800, fournisseur:'Star Distribution', stockInit:60, actif:true },
+      { id:'P-0008', nom:'Eau minérale', categorie:'Boisson', unite:'unité', prixAchat:900, fournisseur:'Star Distribution', stockInit:90, actif:true },
+      { id:'P-0009', nom:'Jus de fruit local', categorie:'Boisson', unite:'unité', prixAchat:1800, fournisseur:'Coopérative Fruits', stockInit:40, actif:true },
+    ];
+    const recettes = [
+      { id:'R-0001', nom:'Romazava', categorie:'Food', prixVente:12000, ingredients:[{produitId:'P-0003',qte:0.22},{produitId:'P-0004',qte:0.08},{produitId:'P-0005',qte:0.05},{produitId:'P-0001',qte:0.25}] },
+      { id:'R-0002', nom:'Poulet grillé & riz', categorie:'Food', prixVente:11000, ingredients:[{produitId:'P-0002',qte:0.3},{produitId:'P-0001',qte:0.25},{produitId:'P-0006',qte:0.02}] },
+      { id:'R-0003', nom:'Ravitoto zébu', categorie:'Food', prixVente:13500, ingredients:[{produitId:'P-0003',qte:0.2},{produitId:'P-0006',qte:0.03},{produitId:'P-0001',qte:0.25}] },
+      { id:'R-0004', nom:'Salade de tomates', categorie:'Food', prixVente:5000, ingredients:[{produitId:'P-0004',qte:0.15},{produitId:'P-0005',qte:0.04},{produitId:'P-0006',qte:0.01}] },
+      { id:'R-0005', nom:'THB 65cl', categorie:'Boisson', prixVente:5500, ingredients:[{produitId:'P-0007',qte:1}] },
+      { id:'R-0006', nom:'Eau minérale', categorie:'Boisson', prixVente:2000, ingredients:[{produitId:'P-0008',qte:1}] },
+      { id:'R-0007', nom:'Jus de fruit local', categorie:'Boisson', prixVente:4000, ingredients:[{produitId:'P-0009',qte:1}] },
+    ];
+    db = { produits, recettes, ventes:[], mouvements:[], seuilAlerte:5 };
+    save();
+    // Ventes de démonstration réparties sur les 14 derniers jours
+    const modes = ['Espèces','Mobile Money','Carte','Espèces','Mobile Money'];
+    for (let d = 13; d >= 0; d--) {
+      const nbVentes = 3 + Math.floor(Math.random()*6);
+      for (let i = 0; i < nbVentes; i++) {
+        const r = recettes[Math.floor(Math.random()*recettes.length)];
+        const qte = 1 + Math.floor(Math.random()*3);
+        const heure = 10 + Math.floor(Math.random()*11);
+        const date = new Date();
+        date.setDate(date.getDate() - d);
+        date.setHours(heure, Math.floor(Math.random()*60), 0, 0);
+        ajouterVente({ recetteId:r.id, qte, modePaiement: modes[Math.floor(Math.random()*modes.length)], source:'POS', dateOverride: date.toISOString() }, false);
+      }
+    }
+    save();
+  }
+
+  function load() {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) { seed(); return; }
+    try {
+      const parsed = JSON.parse(raw);
+      db = Object.assign({ produits:[], recettes:[], ventes:[], mouvements:[], seuilAlerte:5 }, parsed);
+    } catch(e) { seed(); }
+  }
+
+  function save() { localStorage.setItem(KEY, JSON.stringify(db)); }
+
+  function produit(id) { return db.produits.find(p => p.id === id); }
+  function recette(id) { return db.recettes.find(r => r.id === id); }
+
+  function coutRecette(r) {
+    return r.ingredients.reduce((sum, ing) => {
+      const p = produit(ing.produitId);
+      return sum + (p ? p.prixAchat * ing.qte : 0);
+    }, 0);
+  }
+
+  function stockFinal(produitId) {
+    const p = produit(produitId);
+    if (!p) return 0;
+    const entrees = db.mouvements.filter(m => m.produitId === produitId && m.type === 'entree').reduce((s,m) => s+m.qte, 0);
+    const sorties = db.mouvements.filter(m => m.produitId === produitId && m.type === 'sortie').reduce((s,m) => s+m.qte, 0);
+    return p.stockInit + entrees - sorties;
+  }
+
+  function valeurStockTotal() {
+    return db.produits.reduce((sum,p) => sum + stockFinal(p.id) * p.prixAchat, 0);
+  }
+
+  // ---------- Le pont POS -> Ventes ----------
+  // Appelé par POS.checkout() pour CHAQUE ligne du panier : crée la vente,
+  // calcule automatiquement coût/marge/food cost, et décrémente le stock
+  // des ingrédients via des mouvements de sortie. C'est le point d'entrée
+  // unique qui garde Ventes et Stock toujours synchronisés avec la caisse.
+  function ajouterVente({ recetteId, qte, modePaiement, source, dateOverride }, doSave = true) {
+    const r = recette(recetteId);
+    if (!r || qte <= 0) return null;
+    const coutMat = coutRecette(r) * qte;
+    const ca = r.prixVente * qte;
+    const marge = ca - coutMat;
+    const foodCost = ca > 0 ? (coutMat / ca) * 100 : 0;
+    const vente = {
+      id: uid('V'),
+      date: dateOverride || new Date().toISOString(),
+      recetteId, qte,
+      prixUnit: r.prixVente,
+      ca, coutMat, marge, foodCost,
+      modePaiement: modePaiement || 'Espèces',
+      source: source || 'Manuel'
+    };
+    db.ventes.push(vente);
+    r.ingredients.forEach(ing => {
+      db.mouvements.push({
+        id: uid('M'), date: vente.date, produitId: ing.produitId, type:'sortie',
+        qte: ing.qte * qte, motif: `Vente ${source === 'POS' ? 'POS' : 'manuelle'} — ${r.nom} (${vente.id})`
+      });
+    });
+    if (doSave) save();
+    return vente;
+  }
+
+  function supprimerVente(id) {
+    db.ventes = db.ventes.filter(v => v.id !== id);
+    db.mouvements = db.mouvements.filter(m => !(m.motif && m.motif.includes('(' + id + ')')));
+    save();
+  }
+
+  function exportJSON() {
+    const blob = new Blob([JSON.stringify(db, null, 2)], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'vahiny-resto-export.json';
+    a.click();
+  }
+
+  function importJSON(text) {
+    try {
+      const parsed = JSON.parse(text);
+      if (!parsed.produits || !parsed.recettes) return false;
+      db = Object.assign({ produits:[], recettes:[], ventes:[], mouvements:[], seuilAlerte:5 }, parsed);
+      save();
+      return true;
+    } catch(e) { return false; }
+  }
+
+  function reset() { seed(); }
+
+  return { load, save, get db(){ return db; }, produit, recette, coutRecette, stockFinal, valeurStockTotal,
+    ajouterVente, supprimerVente, exportJSON, importJSON, reset, uid };
+})();
+
+// ============================================================
+// UI — rendering for every page + modals
+// ============================================================
+const UI = (() => {
+  const fmt = n => Math.round(n).toLocaleString('fr-FR') + ' Ar';
+  const fmtNum = n => Number(n.toFixed(2)).toLocaleString('fr-FR');
+  let charts = {};
+
+  function toast(msg, type='success') {
+    const c = document.getElementById('toastContainer');
+    const el = document.createElement('div');
+    el.className = 'toast ' + (type === 'error' ? 'error' : type === 'info' ? 'info' : '');
+    el.textContent = msg;
+    c.appendChild(el);
+    setTimeout(() => el.remove(), 3200);
+  }
+
+  function inRange(dateStr, from, to) {
+    const t = new Date(dateStr).getTime();
+    if (from && t < new Date(from).getTime()) return false;
+    if (to && t > new Date(to + 'T23:59:59').getTime()) return false;
+    return true;
+  }
+
+  // ---------------- Dashboard ----------------
+  function renderDashboard() {
+    const from = document.getElementById('dashDateDebut').value;
+    const to = document.getElementById('dashDateFin').value;
+    const ventes = Store.db.ventes.filter(v => inRange(v.date, from, to));
+
+    const ca = ventes.reduce((s,v) => s+v.ca, 0);
+    const cout = ventes.reduce((s,v) => s+v.coutMat, 0);
+    const marge = ca - cout;
+    const foodCost = ca > 0 ? (cout/ca*100) : 0;
+    const couverts = ventes.reduce((s,v) => s+v.qte, 0);
+    const ticket = ventes.length ? ca/ventes.length : 0;
+
+    document.getElementById('kpiCA').textContent = fmt(ca);
+    document.getElementById('kpiCout').textContent = fmt(cout);
+    document.getElementById('kpiMarge').textContent = fmt(marge);
+    document.getElementById('kpiMargePct').textContent = ca>0 ? (marge/ca*100).toFixed(1)+'% de marge globale' : '—';
+    document.getElementById('kpiFoodCost').textContent = foodCost.toFixed(1)+'%';
+    document.getElementById('kpiCouverts').textContent = couverts;
+    document.getElementById('kpiTicket').textContent = fmt(ticket);
+    document.getElementById('kpiStock').textContent = fmt(Store.valeurStockTotal());
+
+    // CA du jour vs hier
+    const todayStr = new Date().toISOString().slice(0,10);
+    const yestDate = new Date(); yestDate.setDate(yestDate.getDate()-1);
+    const yestStr = yestDate.toISOString().slice(0,10);
+    const caJour = Store.db.ventes.filter(v => v.date.slice(0,10) === todayStr).reduce((s,v) => s+v.ca, 0);
+    const caHier = Store.db.ventes.filter(v => v.date.slice(0,10) === yestStr).reduce((s,v) => s+v.ca, 0);
+    const ventesJourCount = Store.db.ventes.filter(v => v.date.slice(0,10) === todayStr).length;
+    document.getElementById('kpiCAJour').textContent = fmt(caJour);
+    document.getElementById('kpiVentesJour').textContent = ventesJourCount;
+    const deltaEl = document.getElementById('kpiCADelta');
+    if (caHier > 0) {
+      const delta = ((caJour-caHier)/caHier*100);
+      deltaEl.textContent = (delta>=0?'▲ +':'▼ ')+delta.toFixed(0)+'% vs hier';
+      deltaEl.className = 'kpi-delta ' + (delta>=0?'up':'down');
+    } else {
+      deltaEl.textContent = 'pas de données hier';
+      deltaEl.className = 'kpi-delta';
+    }
+
+    // Alertes stock
+    const seuil = Store.db.seuilAlerte || 5;
+    const enAlerte = Store.db.produits.filter(p => Store.stockFinal(p.id) <= seuil);
+    document.getElementById('kpiAlertesStock').textContent = enAlerte.length;
+
+    // Recette star
+    const parRecette = {};
+    ventes.forEach(v => { parRecette[v.recetteId] = (parRecette[v.recetteId]||0) + v.ca; });
+    const topId = Object.keys(parRecette).sort((a,b) => parRecette[b]-parRecette[a])[0];
+    const topR = topId ? Store.recette(topId) : null;
+    document.getElementById('kpiTopRecette').textContent = topR ? topR.nom : '—';
+    document.getElementById('kpiTopRecetteSub').textContent = topR ? fmt(parRecette[topId]) + ' de CA' : 'aucune vente';
+
+    // Heure de pointe
+    const parHeure = {};
+    ventes.forEach(v => { const h = new Date(v.date).getHours(); parHeure[h] = (parHeure[h]||0)+v.qte; });
+    const topHeure = Object.keys(parHeure).sort((a,b) => parHeure[b]-parHeure[a])[0];
+    document.getElementById('kpiHeurePointe').textContent = topHeure !== undefined ? topHeure+'h - '+(+topHeure+1)+'h' : '—';
+
+    renderTableauRecettePerf(ventes);
+    renderAlertesStock(enAlerte, seuil);
+    renderChartCA14j();
+    renderChartRepartitionRecette(ventes);
+    renderChartHeures(ventes);
+    renderChartPaiement(ventes);
+  }
+
+  function renderTableauRecettePerf(ventes) {
+    const parR = {};
+    ventes.forEach(v => {
+      if (!parR[v.recetteId]) parR[v.recetteId] = { qte:0, ca:0, cout:0 };
+      parR[v.recetteId].qte += v.qte; parR[v.recetteId].ca += v.ca; parR[v.recetteId].cout += v.coutMat;
+    });
+    const rows = Object.keys(parR).map(id => {
+      const r = Store.recette(id); const d = parR[id];
+      const marge = d.ca - d.cout; const fc = d.ca>0 ? (d.cout/d.ca*100) : 0;
+      return `<tr><td>${r?r.nom:'—'}</td><td>${d.qte}</td><td>${fmt(d.ca)}</td><td>${fmt(d.cout)}</td><td>${fmt(marge)}</td><td>${fc.toFixed(1)}%</td></tr>`;
+    }).sort((a,b) => 0);
+    document.getElementById('tbodyDashRecette').innerHTML = rows.join('') || `<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:20px">Aucune vente sur la période</td></tr>`;
+  }
+
+  function renderAlertesStock(list, seuil) {
+    const el = document.getElementById('dashAlertes');
+    if (!list.length) { el.innerHTML = `<div class="alert-row" style="justify-content:center;color:var(--text3)">Aucune alerte — stock sain ✓</div>`; return; }
+    el.innerHTML = list.map(p => `<div class="alert-row"><span>${p.nom}</span><span class="alert-badge">${fmtNum(Store.stockFinal(p.id))} ${p.unite} (seuil ${seuil})</span></div>`).join('');
+  }
+
+  function destroyChart(key) { if (charts[key]) { charts[key].destroy(); delete charts[key]; } }
+
+  function renderChartCA14j() {
+    destroyChart('ca14');
+    const labels = [], data = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate()-i);
+      const key = d.toISOString().slice(0,10);
+      labels.push(d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}));
+      data.push(Store.db.ventes.filter(v => v.date.slice(0,10)===key).reduce((s,v)=>s+v.ca,0));
+    }
+    const ctx = document.getElementById('chartCA');
+    charts.ca14 = new Chart(ctx, { type:'bar', data:{ labels, datasets:[{ data, backgroundColor:'#1F9D82', borderRadius:5, maxBarThickness:22 }]},
+      options: baseChartOpts(false) });
+  }
+
+  function renderChartRepartitionRecette(ventes) {
+    destroyChart('repRecette');
+    const parR = {};
+    ventes.forEach(v => { const r=Store.recette(v.recetteId); const nom = r?r.nom:'?'; parR[nom]=(parR[nom]||0)+v.ca; });
+    const labels = Object.keys(parR), data = Object.values(parR);
+    const palette = ['#1F9D82','#E8B968','#3FA9C9','#E8593F','#6C8F7E','#B7975A','#7FB8CC','#C97A6B'];
+    const ctx = document.getElementById('chartFC');
+    charts.repRecette = new Chart(ctx, { type:'doughnut', data:{ labels, datasets:[{ data, backgroundColor: palette, borderWidth:2, borderColor:'#FFFFFF' }]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{ boxWidth:10, font:{ size:11 } } } } } });
+  }
+
+  function renderChartHeures(ventes) {
+    destroyChart('heures');
+    const data = Array(24).fill(0);
+    ventes.forEach(v => { data[new Date(v.date).getHours()] += v.qte; });
+    const labels = Array.from({length:24}, (_,i) => i+'h');
+    const ctx = document.getElementById('chartHeures');
+    charts.heures = new Chart(ctx, { type:'bar', data:{ labels, datasets:[{ data, backgroundColor:'#3FA9C9', borderRadius:4, maxBarThickness:14 }]},
+      options: baseChartOpts(false) });
+  }
+
+  function renderChartPaiement(ventes) {
+    destroyChart('paiement');
+    const parP = {};
+    ventes.forEach(v => { parP[v.modePaiement] = (parP[v.modePaiement]||0)+v.ca; });
+    const labels = Object.keys(parP), data = Object.values(parP);
+    const palette = ['#E8B968','#1F9D82','#3FA9C9','#E8593F'];
+    const ctx = document.getElementById('chartPaiement');
+    charts.paiement = new Chart(ctx, { type:'doughnut', data:{ labels, datasets:[{ data, backgroundColor: palette, borderWidth:2, borderColor:'#FFFFFF' }]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{ boxWidth:10, font:{ size:11 } } } } } });
+  }
+
+  function baseChartOpts(showLegend) {
+    return { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display: !!showLegend } },
+      scales:{ x:{ grid:{ display:false }, ticks:{ font:{ size:10 } } }, y:{ grid:{ color:'rgba(22,35,31,.06)' }, ticks:{ font:{ size:10 } } } } };
+  }
+
+  // ---------------- Ventes ----------------
+  function renderVentes() {
+    const q = document.getElementById('searchVente').value.toLowerCase();
+    const from = document.getElementById('venteDateDebut').value;
+    const to = document.getElementById('venteDateFin').value;
+    let list = Store.db.ventes.filter(v => inRange(v.date, from, to));
+    if (q) list = list.filter(v => (Store.recette(v.recetteId)?.nom||'').toLowerCase().includes(q));
+    list = list.slice().sort((a,b) => new Date(b.date)-new Date(a.date));
+    const totalCA = list.reduce((s,v)=>s+v.ca,0);
+    document.getElementById('ventesTotalCA').textContent = fmt(totalCA);
+    document.getElementById('tbodyVentes').innerHTML = list.map(v => {
+      const r = Store.recette(v.recetteId);
+      const d = new Date(v.date);
+      return `<tr>
+        <td class="mono">${v.id}</td>
+        <td>${d.toLocaleDateString('fr-FR')} ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</td>
+        <td>${r?r.nom:'—'}</td>
+        <td>${v.qte}</td>
+        <td>${fmt(v.prixUnit)}</td>
+        <td>${fmt(v.ca)}</td>
+        <td>${fmt(v.coutMat)}</td>
+        <td>${fmt(v.marge)}</td>
+        <td>${v.foodCost.toFixed(1)}%</td>
+        <td>${v.modePaiement}</td>
+        <td><span class="tag ${v.source==='POS'?'tag-pos':'tag-manuel'}">${v.source==='POS'?'POS':'Manuel'}</span></td>
+        <td class="actions-cell"><button class="btn btn-outline btn-icon" onclick="UI.supprimerVente('${v.id}')">✕</button></td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="12" style="color:var(--text3);text-align:center;padding:24px">Aucune vente</td></tr>`;
+  }
+
+  function supprimerVente(id) {
+    if (!confirm('Supprimer cette vente et son mouvement de stock associé ?')) return;
+    Store.supprimerVente(id); renderVentes(); toast('Vente supprimée','info');
+  }
+
+  function modalVente() {
+    const opts = Store.db.recettes.map(r => `<option value="${r.id}">${r.nom} — ${fmt(r.prixVente)}</option>`).join('');
+    document.getElementById('modalTitle').textContent = 'Nouvelle vente manuelle';
+    document.getElementById('modalBody').innerHTML = `
+      <div class="mfield"><label>Recette</label><select id="mvRecette">${opts}</select></div>
+      <div class="mfield"><label>Quantité</label><input type="number" id="mvQte" value="1" min="1" step="1"></div>
+      <div class="mfield"><label>Mode de paiement</label>
+        <select id="mvPaiement"><option>Espèces</option><option>Mobile Money</option><option>Carte</option><option>Autre</option></select>
+      </div>`;
+    openModal(() => {
+      const recetteId = document.getElementById('mvRecette').value;
+      const qte = parseFloat(document.getElementById('mvQte').value) || 1;
+      const modePaiement = document.getElementById('mvPaiement').value;
+      Store.ajouterVente({ recetteId, qte, modePaiement, source:'Manuel' });
+      closeModal(); renderVentes(); toast('Vente enregistrée ✓');
+    });
+  }
+
+  // ---------------- Stock ----------------
+  function renderStock() {
+    const q = document.getElementById('searchStock').value.toLowerCase();
+    let list = Store.db.produits.filter(p => p.nom.toLowerCase().includes(q));
+    let valeurTotale = 0;
+    document.getElementById('tbodyStock').innerHTML = list.map(p => {
+      const entrees = Store.db.mouvements.filter(m=>m.produitId===p.id&&m.type==='entree').reduce((s,m)=>s+m.qte,0);
+      const sorties = Store.db.mouvements.filter(m=>m.produitId===p.id&&m.type==='sortie').reduce((s,m)=>s+m.qte,0);
+      const final = Store.stockFinal(p.id);
+      const valeur = final * p.prixAchat;
+      valeurTotale += valeur;
+      const low = final <= (Store.db.seuilAlerte||5);
+      return `<tr>
+        <td class="mono">${p.id}</td><td>${p.nom}${low?' <span class="tag" style="background:rgba(232,89,63,.1);color:var(--coral)">bas</span>':''}</td>
+        <td>${p.unite}</td><td>${fmtNum(p.stockInit)}</td><td>${fmtNum(entrees)}</td><td>${fmtNum(sorties)}</td>
+        <td><strong>${fmtNum(final)}</strong></td><td>${fmt(valeur)}</td>
+        <td class="actions-cell"><button class="btn btn-outline btn-icon" onclick="UI.modalMouvement('${p.id}')">+ Mvt</button></td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="9" style="color:var(--text3);text-align:center;padding:24px">Aucun produit</td></tr>`;
+    document.getElementById('stockValeurTotal').textContent = fmt(valeurTotale);
+
+    const mvts = Store.db.mouvements.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,40);
+    document.getElementById('tbodyMvt').innerHTML = mvts.map(m => {
+      const p = Store.produit(m.produitId);
+      return `<tr><td>${new Date(m.date).toLocaleDateString('fr-FR')} ${new Date(m.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${p?p.nom:'—'}</td><td>${m.type==='entree'?'Entrée':'Sortie'}</td><td>${fmtNum(m.qte)} ${p?p.unite:''}</td><td>${m.motif||'—'}</td></tr>`;
+    }).join('') || `<tr><td colspan="5" style="color:var(--text3);text-align:center;padding:24px">Aucun mouvement</td></tr>`;
+  }
+
+  function modalMouvement(produitId) {
+    const opts = Store.db.produits.map(p => `<option value="${p.id}" ${p.id===produitId?'selected':''}>${p.nom}</option>`).join('');
+    document.getElementById('modalTitle').textContent = 'Mouvement de stock manuel';
+    document.getElementById('modalBody').innerHTML = `
+      <div class="mfield"><label>Produit</label><select id="mmProduit">${opts}</select></div>
+      <div class="mfield"><label>Type</label><select id="mmType"><option value="entree">Entrée (livraison)</option><option value="sortie">Sortie (perte, casse...)</option></select></div>
+      <div class="mfield"><label>Quantité</label><input type="number" id="mmQte" value="1" min="0" step="0.01"></div>
+      <div class="mfield"><label>Motif</label><input type="text" id="mmMotif" placeholder="Ex: livraison fournisseur"></div>`;
+    openModal(() => {
+      const produitId2 = document.getElementById('mmProduit').value;
+      const type = document.getElementById('mmType').value;
+      const qte = parseFloat(document.getElementById('mmQte').value) || 0;
+      const motif = document.getElementById('mmMotif').value || (type==='entree'?'Entrée manuelle':'Sortie manuelle');
+      Store.db.mouvements.push({ id:Store.uid('M'), date:new Date().toISOString(), produitId:produitId2, type, qte, motif });
+      Store.save(); closeModal(); renderStock(); toast('Mouvement enregistré ✓');
+    });
+  }
+
+  // ---------------- Recettes ----------------
+  function renderRecettes() {
+    document.getElementById('tbodyRecettes').innerHTML = Store.db.recettes.map(r => {
+      const cout = Store.coutRecette(r);
+      const marge = r.prixVente - cout;
+      const fc = r.prixVente>0 ? (cout/r.prixVente*100) : 0;
+      const ingNames = r.ingredients.map(i => { const p=Store.produit(i.produitId); return p?`${p.nom} (${fmtNum(i.qte)} ${p.unite})`:'?'; }).join(', ');
+      return `<tr><td class="mono">${r.id}</td><td>${r.nom}</td><td style="white-space:normal;max-width:260px">${ingNames}</td>
+      <td>${fmt(cout)}</td><td>${fmt(r.prixVente)}</td><td>${fmt(marge)}</td><td>${fc.toFixed(1)}%</td>
+      <td class="actions-cell"><button class="btn btn-outline btn-icon" onclick="UI.modalRecette('${r.id}')">✎</button>
+      <button class="btn btn-outline btn-icon" onclick="UI.supprimerRecette('${r.id}')">✕</button></td></tr>`;
+    }).join('') || `<tr><td colspan="8" style="color:var(--text3);text-align:center;padding:24px">Aucune recette</td></tr>`;
+  }
+
+  function supprimerRecette(id) {
+    if (!confirm('Supprimer cette recette ?')) return;
+    Store.db.recettes = Store.db.recettes.filter(r=>r.id!==id); Store.save(); renderRecettes(); toast('Recette supprimée','info');
+  }
+
+  function modalRecette(id) {
+    const existing = id ? Store.recette(id) : null;
+    const prodOpts = Store.db.produits.map(p => `<option value="${p.id}">${p.nom}</option>`).join('');
+    document.getElementById('modalTitle').textContent = existing ? 'Modifier la recette' : 'Nouvelle recette';
+    const ingredientsHtml = (existing ? existing.ingredients : [{produitId:Store.db.produits[0]?.id,qte:1}])
+      .map(ing => ingredientRow(ing.produitId, ing.qte, prodOpts)).join('');
+    document.getElementById('modalBody').innerHTML = `
+      <div class="mfield"><label>Nom</label><input type="text" id="mrNom" value="${existing?existing.nom:''}"></div>
+      <div class="mfield"><label>Catégorie</label><select id="mrCat">
+        ${['Food','Boisson','Autre'].map(c=>`<option ${existing&&existing.categorie===c?'selected':''}>${c}</option>`).join('')}
+      </select></div>
+      <div class="mfield"><label>Prix de vente (Ar)</label><input type="number" id="mrPrix" value="${existing?existing.prixVente:0}" min="0" step="100"></div>
+      <div class="mfield"><label>Ingrédients</label><div id="mrIngredients">${ingredientsHtml}</div>
+        <button type="button" class="btn btn-outline btn-sm" style="margin-top:6px" onclick="UI.ajouterLigneIngredient()">+ Ingrédient</button>
+      </div>`;
+    window.__prodOpts = prodOpts;
+    openModal(() => {
+      const nom = document.getElementById('mrNom').value.trim();
+      const categorie = document.getElementById('mrCat').value;
+      const prixVente = parseFloat(document.getElementById('mrPrix').value) || 0;
+      const rows = document.querySelectorAll('#mrIngredients .ing-row');
+      const ingredients = Array.from(rows).map(row => ({
+        produitId: row.querySelector('.ing-prod').value,
+        qte: parseFloat(row.querySelector('.ing-qte').value) || 0
+      })).filter(i => i.qte > 0);
+      if (!nom || !ingredients.length) { toast('Nom et au moins un ingrédient requis','error'); return; }
+      if (existing) { Object.assign(existing, { nom, categorie, prixVente, ingredients }); }
+      else { Store.db.recettes.push({ id:Store.uid('R'), nom, categorie, prixVente, ingredients }); }
+      Store.save(); closeModal(); renderRecettes(); toast('Recette enregistrée ✓');
+    });
+  }
+
+  function ingredientRow(produitId, qte, prodOpts) {
+    return `<div class="ing-row" style="display:flex;gap:6px;margin-bottom:6px">
+      <select class="ing-prod" style="flex:2">${prodOpts.replace(`value="${produitId}"`, `value="${produitId}" selected`)}</select>
+      <input class="ing-qte" type="number" style="flex:1" value="${qte}" min="0" step="0.01">
+      <button type="button" class="btn btn-outline btn-icon" onclick="this.closest('.ing-row').remove()">✕</button>
+    </div>`;
+  }
+
+  function ajouterLigneIngredient() {
+    const el = document.getElementById('mrIngredients');
+    el.insertAdjacentHTML('beforeend', ingredientRow(Store.db.produits[0]?.id, 1, window.__prodOpts));
+  }
+
+  // ---------------- Produits ----------------
+  function renderProduits() {
+    const q = document.getElementById('searchProduit').value.toLowerCase();
+    const cat = document.getElementById('filterCatProduit').value;
+    let list = Store.db.produits.filter(p => p.nom.toLowerCase().includes(q) && (!cat || p.categorie===cat));
+    document.getElementById('tbodyProduits').innerHTML = list.map(p => `<tr>
+      <td class="mono">${p.id}</td><td>${p.nom}</td><td>${p.categorie}</td><td>${p.unite}</td>
+      <td>${fmt(p.prixAchat)}</td><td>${p.fournisseur||'—'}</td>
+      <td><span class="tag" style="background:${p.actif?'rgba(31,157,130,.12)':'rgba(232,89,63,.1)'};color:${p.actif?'var(--teal-deep)':'var(--coral)'}">${p.actif?'Actif':'Inactif'}</span></td>
+      <td class="actions-cell"><button class="btn btn-outline btn-icon" onclick="UI.modalProduit('${p.id}')">✎</button>
+      <button class="btn btn-outline btn-icon" onclick="UI.supprimerProduit('${p.id}')">✕</button></td></tr>`).join('')
+      || `<tr><td colspan="8" style="color:var(--text3);text-align:center;padding:24px">Aucun produit</td></tr>`;
+  }
+
+  function supprimerProduit(id) {
+    if (!confirm('Supprimer ce produit ?')) return;
+    Store.db.produits = Store.db.produits.filter(p=>p.id!==id); Store.save(); renderProduits(); toast('Produit supprimé','info');
+  }
+
+  function modalProduit(id) {
+    const existing = id ? Store.produit(id) : null;
+    document.getElementById('modalTitle').textContent = existing ? 'Modifier le produit' : 'Nouveau produit';
+    document.getElementById('modalBody').innerHTML = `
+      <div class="mfield"><label>Nom</label><input type="text" id="mpNom" value="${existing?existing.nom:''}"></div>
+      <div class="mfield"><label>Catégorie</label><select id="mpCat">${['Food','Boisson','Autre'].map(c=>`<option ${existing&&existing.categorie===c?'selected':''}>${c}</option>`).join('')}</select></div>
+      <div class="mfield"><label>Unité</label><input type="text" id="mpUnite" value="${existing?existing.unite:'kg'}"></div>
+      <div class="mfield"><label>Prix d'achat (Ar)</label><input type="number" id="mpPrix" value="${existing?existing.prixAchat:0}" min="0" step="10"></div>
+      <div class="mfield"><label>Fournisseur</label><input type="text" id="mpFourn" value="${existing?existing.fournisseur||'':''}"></div>
+      <div class="mfield"><label>Stock initial</label><input type="number" id="mpStock" value="${existing?existing.stockInit:0}" min="0" step="0.01"></div>
+      <div class="mfield"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="mpActif" ${!existing||existing.actif?'checked':''} style="width:auto"> Actif</label></div>`;
+    openModal(() => {
+      const nom = document.getElementById('mpNom').value.trim();
+      if (!nom) { toast('Le nom est requis','error'); return; }
+      const data = {
+        nom, categorie: document.getElementById('mpCat').value, unite: document.getElementById('mpUnite').value,
+        prixAchat: parseFloat(document.getElementById('mpPrix').value)||0, fournisseur: document.getElementById('mpFourn').value,
+        actif: document.getElementById('mpActif').checked
+      };
+      if (existing) { Object.assign(existing, data); }
+      else { Store.db.produits.push(Object.assign({ id:Store.uid('P'), stockInit: parseFloat(document.getElementById('mpStock').value)||0 }, data)); }
+      Store.save(); closeModal(); renderProduits(); toast('Produit enregistré ✓');
+    });
+  }
+
+  // ---------------- Modal helpers ----------------
+  let currentSave = null;
+  function openModal(onSave) {
+    currentSave = onSave;
+    document.getElementById('appModal').classList.add('open');
+    document.getElementById('modalSaveBtn').onclick = () => currentSave && currentSave();
+  }
+  function closeModal() { document.getElementById('appModal').classList.remove('open'); }
+
+  return { renderDashboard, renderVentes, renderStock, renderRecettes, renderProduits,
+    modalVente, modalMouvement, modalRecette, modalProduit, ajouterLigneIngredient,
+    supprimerVente, supprimerRecette, supprimerProduit, openModal, closeModal, toast, fmt };
+})();
+
+// ============================================================
+// POS — caisse. Chaque checkout() alimente Ventes via Store.ajouterVente()
+// ============================================================
+const POS = (() => {
+  let cart = []; // [{recetteId, qte}]
+  let lastTicket = null;
+  const fmt = n => Math.round(n).toLocaleString('fr-FR') + ' Ar';
+
+  function init() { renderProducts(); renderCart(); }
+
+  function renderProducts() {
+    const q = document.getElementById('posSearch').value.toLowerCase();
+    const cat = document.getElementById('posCategory').value;
+    const list = Store.db.recettes.filter(r => r.nom.toLowerCase().includes(q) && (!cat || r.categorie===cat));
+    document.getElementById('posProducts').innerHTML = list.map(r => `
+      <div class="pos-card" onclick="POS.addToCart('${r.id}')">
+        <div class="pos-card-cat">${r.categorie}</div>
+        <div class="pos-card-name">${r.nom}</div>
+        <div class="pos-card-price">${fmt(r.prixVente)}</div>
+      </div>`).join('') || `<div style="color:var(--text3);font-size:12px;padding:20px">Aucun plat trouvé</div>`;
+  }
+
+  function addToCart(recetteId) {
+    const line = cart.find(c => c.recetteId === recetteId);
+    if (line) line.qte += 1; else cart.push({ recetteId, qte:1 });
+    renderCart();
+  }
+
+  function updateQty(recetteId, delta) {
+    const line = cart.find(c => c.recetteId === recetteId);
+    if (!line) return;
+    line.qte += delta;
+    if (line.qte <= 0) cart = cart.filter(c => c.recetteId !== recetteId);
+    renderCart();
+  }
+
+  function clearCart() { cart = []; renderCart(); }
+
+  function renderCart() {
+    const itemsEl = document.getElementById('posCartItems');
+    document.getElementById('posCartCount').textContent = cart.reduce((s,c)=>s+c.qte,0) + ' article' + (cart.length>1?'s':'');
+    if (!cart.length) { itemsEl.innerHTML = `<div class="pos-empty">Panier vide — sélectionnez un plat</div>`; }
+    else {
+      itemsEl.innerHTML = cart.map(c => {
+        const r = Store.recette(c.recetteId);
+        return `<div class="pos-cart-item">
+          <div><div class="pos-item-name">${r.nom}</div><div class="pos-item-price">${fmt(r.prixVente)} / u.</div></div>
+          <div class="qty-ctrl">
+            <button class="qty-btn" onclick="POS.updateQty('${c.recetteId}',-1)">−</button>
+            <span class="qty-val">${c.qte}</span>
+            <button class="qty-btn" onclick="POS.updateQty('${c.recetteId}',1)">+</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    const subtotal = cart.reduce((s,c) => s + (Store.recette(c.recetteId)?.prixVente||0) * c.qte, 0);
+    document.getElementById('posSubtotal').textContent = fmt(subtotal);
+    document.getElementById('posTotal').textContent = fmt(subtotal);
+    updateChange();
+  }
+
+  function updateChange() {
+    const total = cart.reduce((s,c) => s + (Store.recette(c.recetteId)?.prixVente||0) * c.qte, 0);
+    const received = parseFloat(document.getElementById('posReceived').value) || 0;
+    document.getElementById('posChange').textContent = fmt(Math.max(0, received-total));
+  }
+
+  // ---- Cœur de l'automatisation POS -> Ventes ----
+  function checkout() {
+    if (!cart.length) { UI.toast('Le panier est vide','error'); return; }
+    const total = cart.reduce((s,c) => s + (Store.recette(c.recetteId)?.prixVente||0) * c.qte, 0);
+    const modePaiement = document.getElementById('posPayment').value;
+    const received = parseFloat(document.getElementById('posReceived').value) || 0;
+    const monnaie = Math.max(0, received - total);
+
+    if (received > 0 && received < total) {
+      UI.toast(`Montant reçu insuffisant — il manque ${fmt(total-received)}`, 'error');
+      return;
+    }
+
+    const created = cart.map(c => Store.ajouterVente({ recetteId: c.recetteId, qte: c.qte, modePaiement, source:'POS' }));
+    lastTicket = { lignes: created, total, date: new Date(), modePaiement, received: received || total, monnaie };
+    cart = [];
+    document.getElementById('posReceived').value = 0;
+    renderCart();
+    UI.toast(`Vente enregistrée ✓ — Monnaie à rendre : ${fmt(monnaie)}`);
+    printLastTicket();
+  }
+
+  // ---- Impression du ticket via la boîte de dialogue d'impression du navigateur ----
+  function printLastTicket() {
+    if (!lastTicket) { UI.toast('Aucun ticket à imprimer — encaissez d\'abord une vente','error'); return; }
+    const t = lastTicket;
+    const lignesHtml = t.lignes.map(v => {
+      const r = Store.recette(v.recetteId);
+      return `<div class="receipt-line">${r.nom}<div class="receipt-row"><span>${v.qte} x ${fmt(v.prixUnit)}</span><span>${fmt(v.ca)}</span></div></div>`;
+    }).join('');
+    document.getElementById('receiptArea').innerHTML = `
+      <div class="receipt-title">Vahiny Resto</div>
+      <div class="receipt-sub">${t.date.toLocaleDateString('fr-FR')} ${t.date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+      <hr>
+      ${lignesHtml}
+      <hr>
+      <div class="receipt-row receipt-total"><span>TOTAL</span><span>${fmt(t.total)}</span></div>
+      <div class="receipt-row"><span>Paiement</span><span>${t.modePaiement}</span></div>
+      <div class="receipt-row"><span>Reçu</span><span>${fmt(t.received)}</span></div>
+      <div class="receipt-row"><span>Monnaie rendue</span><span>${fmt(t.monnaie)}</span></div>
+      <hr>
+      <div class="receipt-foot">Merci de votre visite !</div>`;
+    window.print();
+  }
+
+  return { init, renderProducts, addToCart, updateQty, clearCart, updateChange, checkout, printLastTicket };
+})();
+
+// ============================================================
+// APP — Navigation & initialisation
+// ============================================================
+const pages = { dashboard:'Dashboard', pos:'POS / Caisse', ventes:'Ventes', stock:'Stock', recettes:'Fiches Techniques', produits:'Produits', parametres:'Paramètres' };
+
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.getElementById('nav-'+p)?.classList.add('active');
+  document.getElementById('pageTitle').textContent = pages[p] || p;
+  document.getElementById('sidebar').classList.remove('open');
+  const renders = { dashboard: UI.renderDashboard, pos: POS.init, ventes: UI.renderVentes, stock: UI.renderStock, recettes: UI.renderRecettes, produits: UI.renderProduits, parametres: renderParametres };
+  if (renders[p]) renders[p]();
+}
+
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+function resetDashFilter() {
+  document.getElementById('dashDateDebut').value = '';
+  document.getElementById('dashDateFin').value = '';
+  UI.renderDashboard();
+}
+
+function importData(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    if (Store.importJSON(ev.target.result)) { UI.toast('Données importées ✓'); showPage('dashboard'); }
+    else UI.toast('Fichier JSON invalide.','error');
+  };
+  reader.readAsText(file);
+}
+
+function resetData() {
+  if (!confirm('Supprimer TOUTES les données et recharger la démo ? Cette action est irréversible.')) return;
+  Store.reset(); UI.toast('Données réinitialisées.','info'); showPage('dashboard');
+}
+
+function saveSeuil() {
+  Store.db.seuilAlerte = parseFloat(document.getElementById('seuilAlerte').value) || 5;
+  Store.save(); UI.toast('Seuil mis à jour ✓');
+}
+
+function renderParametres() {
+  document.getElementById('seuilAlerte').value = Store.db.seuilAlerte || 5;
+  document.getElementById('sysStats').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      ${[
+        ['Produits', Store.db.produits.length],
+        ['Recettes', Store.db.recettes.length],
+        ['Ventes enregistrées', Store.db.ventes.length],
+        ['— dont issues du POS', Store.db.ventes.filter(v=>v.source==='POS').length],
+        ['Mouvements stock', Store.db.mouvements.length],
+        ['Stockage utilisé', Math.round(JSON.stringify(Store.db).length / 1024) + ' Ko'],
+      ].map(([k,v]) => `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+        <span style="color:var(--text2)">${k}</span><strong class="mono">${v}</strong>
+      </div>`).join('')}
+    </div>`;
+}
+
+document.getElementById('appModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('appModal')) UI.closeModal();
+});
+
+function init() {
+  Store.load();
+  document.getElementById('topDate').textContent = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  showPage('dashboard');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+model User {
+  id              String        @id @default(cuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  name            String
+  email           String        @unique
+  passwordHash    String
+  role            String        @default("CASHIER")
+  active          Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+
+  orders          Order[]
+}
+
+model Category {
+  id              String        @id @default(cuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  name            String
+  color           String        @default("#2F6F6F")
+  sortOrder       Int           @default(0)
+
+  products        Product[]
+}
+
+model Product {
+  id              String        @id @default(cuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  categoryId      String
+  category        Category      @relation(fields: [categoryId], references: [id])
+  name            String
+  price           Int
+  taxRate         Float         @default(20)
+  station         String        @default("cuisine")
+  active          Boolean       @default(true)
+  imageUrl        String?
+
+  orderItems      OrderItem[]
+}
+
+model Zone {
+  id              String        @id @default(cuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  name            String
+
+  tables          Table[]
+}
+
+model Table {
+  id              String        @id @default(cuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  zoneId          String
+  zone            Zone          @relation(fields: [zoneId], references: [id])
+  label           String
+  seats            Int           @default(2)
+  status           String        @default("FREE")
+
+  orders          Order[]
+}

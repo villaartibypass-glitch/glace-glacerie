@@ -1,0 +1,195 @@
+// ============================================================================
+// SCHEMA PRISMA - ERP/POS Multi-établissement
+// ----------------------------------------------------------------------------
+// Ce schéma couvre le socle commun ("core") utilisé par tous les modules :
+// Établissements, Utilisateurs/Rôles, Produits, Tables, Commandes, Paiements.
+//
+// Chaque établissement (EventFlow catering, resort avec piscine/pâtisserie...)
+// est une ligne de la table Establishment : même code, données isolées par
+// establishmentId. Les modules futurs (Stock, Achats, Fournisseurs, Recettes,
+// CRM, Fidélité, Réservations, Événementiel, Comptabilité) viendront ajouter
+// des modèles qui référencent ce même socle (voir commentaires en bas).
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Établissement & utilisateurs
+// ---------------------------------------------------------------------------
+
+model Establishment {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // "catering" | "resort" | "restaurant" | ...
+  createdAt DateTime @default(now())
+
+  users     User[]
+  categories Category[]
+  products  Product[]
+  zones     Zone[]
+  tables    Table[]
+  orders    Order[]
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  CASHIER
+  KITCHEN
+  WAITER
+}
+
+model User {
+  id              String        @id @default(cuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  name            String
+  email           String        @unique
+  passwordHash    String
+  role            Role          @default(CASHIER)
+  active          Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+
+  orders          Order[]
+}
+
+// ---------------------------------------------------------------------------
+// Catalogue produits (partagé POS / Cuisine / Stock / Recettes plus tard)
+// ---------------------------------------------------------------------------
+
+model Category {
+  id              String        @id @default(cuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  name            String
+  color           String        @default("#2F6F6F")
+  sortOrder       Int           @default(0)
+
+  products        Product[]
+}
+
+model Product {
+  id              String        @id @default(cuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  categoryId      String
+  category        Category      @relation(fields: [categoryId], references: [id])
+  name            String
+  price           Decimal
+  taxRate         Decimal  @default(20.0)
+  station         String        @default("cuisine") // cuisine | bar | patisserie ...
+  active          Boolean       @default(true)
+  imageUrl        String?
+
+  orderItems      OrderItem[]
+}
+
+// ---------------------------------------------------------------------------
+// Salle / Tables (module "Gestion des tables")
+// ---------------------------------------------------------------------------
+
+model Zone {
+  id              String        @id @default(cuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  name            String        // "Terrasse", "Salle principale", "Piscine"...
+
+  tables          Table[]
+}
+
+enum TableStatus {
+  FREE
+  OCCUPIED
+  RESERVED
+  CLEANING
+}
+
+model Table {
+  id              String        @id @default(cuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  zoneId          String
+  zone            Zone          @relation(fields: [zoneId], references: [id])
+  label           String        // "T1", "T2"...
+  seats           Int           @default(2)
+  status          TableStatus   @default(FREE)
+
+  orders          Order[]
+}
+
+// ---------------------------------------------------------------------------
+// Commandes POS (coeur du module caisse + alimente Cuisine/KDS et Rapports)
+// ---------------------------------------------------------------------------
+
+enum OrderStatus {
+  OPEN
+  SENT
+  READY
+  PAID
+  CANCELLED
+}
+
+model Order {
+  id              String        @id @default(cuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id])
+  number          Int           @default(autoincrement())
+  tableId         String?
+  table           Table?        @relation(fields: [tableId], references: [id])
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  status          OrderStatus   @default(OPEN)
+  createdAt       DateTime      @default(now())
+  closedAt        DateTime?
+
+  items           OrderItem[]
+  payments        Payment[]
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id])
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Int      @default(1)
+  unitPrice  Decimal
+  note       String?
+  station    String   @default("cuisine")
+  sentAt     DateTime?
+  readyAt    DateTime?
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  MOBILE_MONEY
+  VOUCHER
+}
+
+model Payment {
+  id       String        @id @default(cuid())
+  orderId  String
+  order    Order         @relation(fields: [orderId], references: [id])
+  method   PaymentMethod
+  amount   Decimal
+  createdAt DateTime     @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Modules futurs (à brancher sur ce même socle, non implémentés ici) :
+// - Stock / Inventaire   -> StockItem, StockMovement (liés à Product)
+// - Achats / Fournisseurs -> Supplier, PurchaseOrder
+// - Recettes             -> Recipe, RecipeIngredient (liés à Product + StockItem)
+// - Comptabilité          -> LedgerEntry (généré depuis Payment/Order)
+// - CRM / Fidélité        -> Customer, LoyaltyAccount, LoyaltyTransaction
+// - Réservations          -> Reservation (liée à Table ou Zone "Piscine")
+// - Événementiel          -> Event, EventBooking
+// ---------------------------------------------------------------------------

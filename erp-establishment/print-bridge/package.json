@@ -1,0 +1,14 @@
+{
+  "name": "erp-print-bridge",
+  "version": "1.0.0",
+  "description": "Petit serveur local qui reçoit un texte de reçu et l'imprime en ESC/POS sur une Xprinter USB",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "escpos": "^3.0.0-alpha.6",
+    "escpos-usb": "^3.0.0-alpha.4",
+    "express": "^4.21.0"
+  }
+}
