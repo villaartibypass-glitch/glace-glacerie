@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gelato ERP — Gestion de glacerie</title>
+<style>
+  :root{
+    --cream:#FAF6EF;
+    --cream-2:#F1EADC;
+    --ink:#2B2622;
+    --ink-soft:#5B5148;
+    --choc:#3B2A22;
+    --choc-2:#4A3528;
+    --pistache:#7A9B5C;
+    --pistache-d:#5E7C43;
+    --framboise:#C4436B;
+    --framboise-d:#A3335A;
+    --vanille:#E8B84B;
+    --citron:#D9C24A;
+    --myrtille:#5C6FA8;
+    --stracciatella:#8A6A4E;
+    --line:#E4DBC9;
+    --white:#FFFEFB;
+    --radius:10px;
+    --shadow:0 2px 10px rgba(43,38,34,.07);
+    --shadow-lg:0 12px 32px rgba(43,38,34,.16);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    display:flex;
+    min-height:100vh;
+  }
+  h1,h2,h3,.display{
+    font-family:'Fraunces','Georgia',serif;
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+  .num, .mono{ font-family:'IBM Plex Mono','Courier New',monospace; }
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  ::-webkit-scrollbar{width:9px;height:9px;}
+  ::-webkit-scrollbar-thumb{background:#D8CDB6;border-radius:6px;}
+
+  /* ---------- SIDEBAR ---------- */
+  #sidebar{
+    width:236px;
+    flex-shrink:0;
+    background:linear-gradient(185deg,var(--choc),var(--choc-2));
+    color:#F3E9DB;
+    display:flex;
+    flex-direction:column;
+    padding:20px 0;
+    position:sticky;
+    top:0;
+    height:100vh;
+    overflow-y:auto;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:0 20px 18px 20px;
+    border-bottom:1px solid rgba(255,255,255,.1);
+    margin-bottom:10px;
+  }
+  .brand .scoop{
+    width:34px;height:34px;border-radius:50% 50% 50% 4px;
+    background:conic-gradient(from 220deg, var(--pistache), var(--vanille), var(--framboise), var(--pistache));
+    flex-shrink:0;
+    box-shadow:inset 0 -3px 6px rgba(0,0,0,.25);
+  }
+  .brand-text{line-height:1.15;}
+  .brand-text b{font-family:'Fraunces',serif;font-size:16px;display:block;}
+  .brand-text span{font-size:10.5px;opacity:.65;letter-spacing:.06em;text-transform:uppercase;}
+  nav{display:flex;flex-direction:column;gap:2px;padding:6px 10px;flex:1;}
+  .nav-group-label{
+    font-size:10px;text-transform:uppercase;letter-spacing:.09em;
+    opacity:.45;padding:14px 10px 4px;
+  }
+  .nav-btn{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 12px;border:none;background:transparent;color:#EFE2CE;
+    border-radius:8px;font-size:13.5px;text-align:left;width:100%;
+    transition:background .12s ease;
+  }
+  .nav-btn .ic{font-size:15px;width:18px;text-align:center;}
+  .nav-btn:hover{background:rgba(255,255,255,.08);}
+  .nav-btn.active{background:var(--pistache);color:#1F2A16;font-weight:600;}
+  .nav-badge{
+    margin-left:auto;background:var(--framboise);color:#fff;font-size:10px;
+    padding:1px 6px;border-radius:20px;font-weight:700;
+  }
+  .sidebar-foot{padding:12px 20px 0;font-size:10.5px;opacity:.4;border-top:1px solid rgba(255,255,255,.08);margin-top:8px;padding-top:12px;}
+
+  /* ---------- MAIN ---------- */
+  #main{flex:1;min-width:0;display:flex;flex-direction:column;}
+  #topbar{
+    background:var(--white);border-bottom:1px solid var(--line);
+    padding:14px 28px;display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:5;
+  }
+  #topbar h1{font-size:21px;margin:0;}
+  #topbar .sub{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .top-right{display:flex;align-items:center;gap:14px;}
+  .datebox{font-size:12.5px;color:var(--ink-soft);text-align:right;line-height:1.3;}
+  .alert-pill{
+    display:flex;align-items:center;gap:6px;background:#FBEAE0;color:var(--framboise-d);
+    padding:7px 12px;border-radius:20px;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid #F3CFC0;
+  }
+  #content{padding:26px 28px 60px;max-width:1400px;}
+
+  /* ---------- GENERIC UI ---------- */
+  .grid-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px;}
+  .kpi{
+    background:var(--white);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;
+  }
+  .kpi:before{content:"";position:absolute;top:0;left:0;width:4px;height:100%;background:var(--pistache);}
+  .kpi.rose:before{background:var(--framboise);}
+  .kpi.or:before{background:var(--vanille);}
+  .kpi.bleu:before{background:var(--myrtille);}
+  .kpi .lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:600;}
+  .kpi .val{font-family:'Fraunces',serif;font-size:26px;margin-top:4px;}
+  .kpi .sub{font-size:11.5px;color:var(--ink-soft);margin-top:3px;}
+
+  .panel{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden;}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);}
+  .panel-head h3{margin:0;font-size:16px;}
+  .panel-body{padding:18px 20px;}
+  .two-col{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;}
+  @media(max-width:1000px){.two-col{grid-template-columns:1fr;}}
+
+  .btn{
+    background:var(--pistache);color:#fff;border:none;padding:8px 15px;border-radius:7px;
+    font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn:hover{background:var(--pistache-d);}
+  .btn.secondary{background:var(--cream-2);color:var(--ink);border:1px solid var(--line);}
+  .btn.secondary:hover{background:#E9DFC9;}
+  .btn.danger{background:#fff;color:var(--framboise-d);border:1px solid #F0CBD6;}
+  .btn.danger:hover{background:#FBEAEF;}
+  .btn.small{padding:5px 10px;font-size:12px;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{
+    text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--ink-soft);border-bottom:1px solid var(--line);padding:8px 10px;font-weight:700;
+  }
+  td{padding:9px 10px;border-bottom:1px solid #F0E9D9;vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#FBF8F1;}
+  .num-cell{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;}
+  .empty-row{text-align:center;color:var(--ink-soft);padding:26px;font-style:italic;font-size:13px;}
+
+  .tag{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:20px;}
+  .tag .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .tag.ok{background:#EAF3E2;color:var(--pistache-d);}
+  .tag.warn{background:#FBF1DC;color:#93700F;}
+  .tag.bad{background:#FBEAEF;color:var(--framboise-d);}
+  .tag.info{background:#E9EDF8;color:var(--myrtille);}
+  .tag.neutral{background:var(--cream-2);color:var(--ink-soft);}
+
+  .field{margin-bottom:13px;display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:12px;font-weight:600;color:var(--ink-soft);}
+  .field input,.field select,.field textarea{
+    padding:8px 10px;border:1px solid var(--line);border-radius:7px;font-size:13.5px;
+    font-family:inherit;background:var(--cream);
+  }
+  .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--pistache);outline-offset:0;background:#fff;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .hint{font-size:11px;color:var(--ink-soft);}
+
+  .modal-bg{
+    position:fixed;inset:0;background:rgba(43,38,34,.45);display:flex;align-items:flex-start;
+    justify-content:center;padding:40px 20px;z-index:100;overflow-y:auto;
+  }
+  .modal{
+    background:#fff;border-radius:14px;width:100%;max-width:560px;box-shadow:var(--shadow-lg);
+    animation:pop .14s ease;
+  }
+  @keyframes pop{from{transform:translateY(6px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .modal-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+  .modal-head h3{margin:0;font-size:17px;}
+  .modal-close{background:none;border:none;font-size:20px;color:var(--ink-soft);line-height:1;}
+  .modal-body{padding:20px 22px;max-height:70vh;overflow-y:auto;}
+  .modal-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;}
+  .ing-row{display:grid;grid-template-columns:1.6fr .8fr .6fr auto;gap:8px;align-items:center;margin-bottom:8px;}
+  .flavor-dot{width:11px;height:11px;border-radius:50%;display:inline-block;flex-shrink:0;}
+  .flex{display:flex;align-items:center;}
+  .gap8{gap:8px;} .gap6{gap:6px;}
+  .muted{color:var(--ink-soft);}
+  .toast{
+    position:fixed;bottom:22px;right:22px;background:var(--choc);color:#F3E9DB;padding:12px 18px;
+    border-radius:9px;font-size:13px;box-shadow:var(--shadow-lg);z-index:200;
+  }
+  .subtabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+  .subtab{padding:6px 13px;border-radius:20px;font-size:12.5px;font-weight:600;background:var(--cream-2);border:1px solid var(--line);color:var(--ink-soft);}
+  .subtab.active{background:var(--choc);color:#F3E9DB;border-color:var(--choc);}
+  .progressbar{height:6px;background:var(--cream-2);border-radius:4px;overflow:hidden;}
+  .progressbar > div{height:100%;background:var(--pistache);}
+  .stat-mini{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px dashed var(--line);}
+  .stat-mini:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="brand">
+    <div class="scoop"></div>
+    <div class="brand-text"><b id="brandName">Gelato ERP</b><span>Gestion de glacerie</span></div>
+  </div>
+  <nav id="nav"></nav>
+  <div class="sidebar-foot">Données enregistrées automatiquement · local</div>
+</div>
+
+<div id="main">
+  <div id="topbar">
+    <div>
+      <h1 id="pageTitle">Tableau de bord</h1>
+      <div class="sub" id="pageSub">Vue d'ensemble de votre activité</div>
+    </div>
+    <div class="top-right">
+      <div class="alert-pill" id="alertPill" onclick="goTo('dashboard')" style="display:none;"></div>
+      <div class="datebox"><span id="clockDate"></span></div>
+    </div>
+  </div>
+  <div id="content"></div>
+</div>
+
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+
+<script>
+/* ======================================================================
+   GELATO ERP — moteur applicatif (JS vanilla, mono-fichier)
+   ====================================================================== */
+
+const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
+const todayISO = () => new Date().toISOString().slice(0,10);
+const CURRENCIES = [
+  {code:'MGA', label:'Ariary malgache', symbol:'Ar', decimals:0},
+  {code:'EUR', label:'Euro', symbol:'€', decimals:2},
+  {code:'USD', label:'Dollar américain', symbol:'$', decimals:2},
+  {code:'XOF', label:'Franc CFA (UEMOA)', symbol:'FCFA', decimals:0},
+  {code:'XAF', label:'Franc CFA (CEMAC)', symbol:'FCFA', decimals:0},
+  {code:'MAD', label:'Dirham marocain', symbol:'MAD', decimals:2},
+  {code:'CHF', label:'Franc suisse', symbol:'CHF', decimals:2},
+  {code:'CAD', label:'Dollar canadien', symbol:'$CA', decimals:2},
+  {code:'AUTRE', label:'Autre / personnalisé', symbol:'', decimals:2},
+];
+function currentCurrency(){
+  const c = CURRENCIES.find(x=>x.code===(DB.parametres.deviseCode||'MGA')) || CURRENCIES[0];
+  if(c.code==='AUTRE') return {...c, symbol: DB.parametres.deviseSymbolePerso || 'Ar'};
+  return c;
+}
+const fmtMoney = n => {
+  const cur = currentCurrency();
+  const f = Math.pow(10,cur.decimals);
+  return (Math.round((n||0)*f)/f).toLocaleString('fr-FR',{minimumFractionDigits:cur.decimals,maximumFractionDigits:cur.decimals}) + ' ' + cur.symbol;
+};
+const fmtNum = n => (Math.round((n||0)*100)/100).toLocaleString('fr-FR');
+const daysBetween = (a,b) => Math.round((new Date(b)-new Date(a))/86400000);
+const addDays = (dateStr,n) => { const d = new Date(dateStr); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+
+const UNITES = ['kg','g','mg','L','mL','cL','pièce'];
+const FLAVOR_PALETTE = [
+  {name:'Pistache', hex:'#7A9B5C'}, {name:'Vanille', hex:'#E8B84B'}, {name:'Fraise / Framboise', hex:'#C4436B'},
+  {name:'Chocolat', hex:'#6B4630'}, {name:'Citron', hex:'#D9C24A'}, {name:'Myrtille / Cassis', hex:'#5C6FA8'},
+  {name:'Café / Stracciatella', hex:'#8A6A4E'}, {name:'Mangue / Fruits exo.', hex:'#E8935A'}, {name:'Neutre / Sorbet', hex:'#A8B4A0'}
+];
+
+/* ---------- MODULES / NAVIGATION ---------- */
+const MODULES = [
+  {group:'Pilotage', items:[
+    {id:'dashboard', label:'Tableau de bord', ic:'◆'},
+  ]},
+  {group:'Production', items:[
+    {id:'recettes', label:'Recettes & fiches techniques', ic:'✎'},
+    {id:'production', label:'Production / fabrication', ic:'⚙'},
+    {id:'stockMP', label:'Stock matières premières', ic:'▤'},
+    {id:'stockPF', label:'Stock produits finis', ic:'▥'},
+    {id:'tracabilite', label:'Traçabilité & DLC', ic:'⌘'},
+  ]},
+  {group:'Commerce', items:[
+    {id:'ventes', label:'Ventes / point de vente', ic:'€'},
+    {id:'clients', label:'Clients & fidélité', ic:'☺'},
+  ]},
+  {group:'Achats', items:[
+    {id:'fournisseurs', label:'Fournisseurs', ic:'⚑'},
+    {id:'achats', label:'Commandes d\'achat', ic:'▦'},
+  ]},
+  {group:'Entreprise', items:[
+    {id:'finances', label:'Finances', ic:'∑'},
+    {id:'personnel', label:'Personnel', ic:'♟'},
+    {id:'rapports', label:'Rapports', ic:'▲'},
+    {id:'parametres', label:'Paramètres', ic:'⚒'},
+  ]},
+];
+
+let DB = null;
+let state = { active:'dashboard' };
+
+function defaultDB(){
+  return {
+    parametres:{ nomEntreprise:'Ma Glacerie', deviseCode:'MGA', deviseSymbolePerso:'', coefficientMarge:3.2, tauxTVA:5.5, tauxFidelite:1, seuilDLCAlerteJours:7 },
+    stockMP:[
+      {id:uid(), nom:'Lait entier', unite:'L', quantite:80, seuilAlerte:30, coutUnitaire:0.95, fournisseurId:null},
+      {id:uid(), nom:'Crème fraîche 35%', unite:'L', quantite:25, seuilAlerte:15, coutUnitaire:3.2, fournisseurId:null},
+      {id:uid(), nom:'Sucre', unite:'kg', quantite:60, seuilAlerte:20, coutUnitaire:0.9, fournisseurId:null},
+      {id:uid(), nom:'Pâte de pistache', unite:'kg', quantite:4, seuilAlerte:2, coutUnitaire:28, fournisseurId:null},
+      {id:uid(), nom:'Cacao 100%', unite:'kg', quantite:6, seuilAlerte:3, coutUnitaire:14, fournisseurId:null},
+      {id:uid(), nom:'Purée de fraise', unite:'kg', quantite:10, seuilAlerte:5, coutUnitaire:6.5, fournisseurId:null},
+      {id:uid(), nom:'Jaunes d\'oeufs', unite:'kg', quantite:5, seuilAlerte:3, coutUnitaire:5, fournisseurId:null},
+      {id:uid(), nom:'Stabilisateur/émulsifiant', unite:'kg', quantite:2, seuilAlerte:1, coutUnitaire:12, fournisseurId:null},
+    ],
+    recettes:[], production:[], stockPF:[], ventes:[], clients:[], fournisseurs:[], achats:[], charges:[], personnel:[],
+  };
+}
+
+function seedRecettes(){
+  const mp = n => DB.stockMP.find(m=>m.nom===n).id;
+  DB.recettes = [
+    {id:uid(), nom:'Pistache', couleur:'#7A9B5C', rendement:10, unite:'L', dureeConservationJours:120, prixVente:6.5,
+      ingredients:[{mpId:mp('Lait entier'),qty:6},{mpId:mp('Crème fraîche 35%'),qty:2},{mpId:mp('Sucre'),qty:1.6},{mpId:mp('Pâte de pistache'),qty:0.6},{mpId:mp('Stabilisateur/émulsifiant'),qty:0.04}]},
+    {id:uid(), nom:'Chocolat noir', couleur:'#6B4630', rendement:10, unite:'L', dureeConservationJours:120, prixVente:6.0,
+      ingredients:[{mpId:mp('Lait entier'),qty:6.5},{mpId:mp('Crème fraîche 35%'),qty:1.5},{mpId:mp('Sucre'),qty:1.4},{mpId:mp('Cacao 100%'),qty:0.9},{mpId:mp('Stabilisateur/émulsifiant'),qty:0.04}]},
+    {id:uid(), nom:'Sorbet fraise', couleur:'#C4436B', rendement:10, unite:'L', dureeConservationJours:90, prixVente:5.5,
+      ingredients:[{mpId:mp('Purée de fraise'),qty:5.5},{mpId:mp('Sucre'),qty:1.8},{mpId:mp('Stabilisateur/émulsifiant'),qty:0.03}]},
+  ];
+}
+
+/* ---------- PERSISTENCE ----------
+   Fonctionne dans deux contextes :
+   1) Aperçu artifact Claude -> window.storage (persistance liée au compte)
+   2) Fichier ouvert directement dans un navigateur -> repli sur localStorage,
+      puis sur une simple variable mémoire si rien n'est disponible. */
+const STORAGE_KEY = 'gelato_erp_db';
+let storageMode = 'memory';
+
+async function detectStorageMode(){
+  if(typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function'){
+    try{ await window.storage.get('__probe__', false); storageMode = 'artifact'; return; }
+    catch(e){ storageMode = 'artifact'; return; } // "clé introuvable" = l'API fonctionne quand même
+  }
+  try{
+    localStorage.setItem('__probe__','1'); localStorage.removeItem('__probe__');
+    storageMode = 'local';
+  }catch(e){ storageMode = 'memory'; }
+}
+
+async function loadDB(){
+  await detectStorageMode();
+  let raw = null;
+  try{
+    if(storageMode==='artifact'){
+      const res = await window.storage.get(STORAGE_KEY, false);
+      raw = res ? res.value : null;
+    } else if(storageMode==='local'){
+      raw = localStorage.getItem(STORAGE_KEY);
+    }
+  }catch(e){ raw = null; }
+
+  if(raw){
+    try{ DB = JSON.parse(raw); }
+    catch(e){ DB = defaultDB(); seedRecettes(); }
+  } else {
+    DB = defaultDB(); seedRecettes();
+    await saveDB(true);
+  }
+  // sécurité de migration (anciennes sauvegardes)
+  DB.charges = DB.charges || [];
+  DB.personnel = DB.personnel || [];
+  DB.parametres = DB.parametres || defaultDB().parametres;
+}
+
+let saveTimer = null;
+function saveDB(immediate){
+  return new Promise((resolve)=>{
+    const doSave = async ()=>{
+      const json = JSON.stringify(DB);
+      try{
+        if(storageMode==='artifact'){ await window.storage.set(STORAGE_KEY, json, false); }
+        else if(storageMode==='local'){ localStorage.setItem(STORAGE_KEY, json); }
+        // storageMode==='memory' -> rien à faire, DB reste en mémoire pour la session
+      }catch(e){ showToast('⚠ Échec de l\'enregistrement automatique'); }
+      resolve();
+    };
+    clearTimeout(saveTimer);
+    if(immediate){ doSave(); } else { saveTimer = setTimeout(doSave, 150); }
+  });
+}
+
+/* ---------- HELPERS métier ---------- */
+function recette(id){ return DB.recettes.find(r=>r.id===id); }
+function mpById(id){ return DB.stockMP.find(m=>m.id===id); }
+function fournisseur(id){ return DB.fournisseurs.find(f=>f.id===id); }
+function client(id){ return DB.clients.find(c=>c.id===id); }
+
+function coutRecette(r){
+  let c = 0;
+  (r.ingredients||[]).forEach(ing=>{ const mp = mpById(ing.mpId); if(mp) c += (mp.coutUnitaire||0)*ing.qty; });
+  return r.rendement>0 ? c/r.rendement : 0;
+}
+function prixConseille(r){ return coutRecette(r)*(DB.parametres.coefficientMarge||3); }
+
+function stockPFDispo(recetteId){
+  return DB.stockPF.filter(l=>l.recetteId===recetteId).reduce((s,l)=>s+l.quantite,0);
+}
+function stockMPAlertes(){ return DB.stockMP.filter(m=>m.quantite <= m.seuilAlerte); }
+function stockPFAlertesDLC(){
+  const seuil = DB.parametres.seuilDLCAlerteJours||7;
+  return DB.stockPF.filter(l=>l.quantite>0 && daysBetween(todayISO(), l.dlc) <= seuil);
+}
+function totalAlertes(){ return stockMPAlertes().length + stockPFAlertesDLC().length; }
+
+/* ---------- RENDER SHELL ---------- */
+function buildNav(){
+  const nav = document.getElementById('nav');
+  nav.innerHTML = '';
+  MODULES.forEach(g=>{
+    const lbl = document.createElement('div');
+    lbl.className='nav-group-label'; lbl.textContent = g.group;
+    nav.appendChild(lbl);
+    g.items.forEach(it=>{
+      const b = document.createElement('button');
+      b.className = 'nav-btn' + (state.active===it.id ? ' active':'');
+      b.onclick = ()=>goTo(it.id);
+      let badge = '';
+      if(it.id==='dashboard' && totalAlertes()>0) badge = `<span class="nav-badge">${totalAlertes()}</span>`;
+      b.innerHTML = `<span class="ic">${it.ic}</span><span>${it.label}</span>${badge}`;
+      nav.appendChild(b);
+    });
+  });
+}
+const PAGE_META = {
+  dashboard:['Tableau de bord',"Vue d'ensemble de votre activité"],
+  recettes:['Recettes & fiches techniques','Formulation, coût de revient et prix conseillé'],
+  production:['Production / fabrication','Planifiez un lot : le stock est déduit et calculé automatiquement'],
+  stockMP:['Stock matières premières','Suivi des quantités et des seuils d\'alerte'],
+  stockPF:['Stock produits finis','Lots de glace disponibles à la vente, avec DLC'],
+  tracabilite:['Traçabilité & DLC','Historique des lots, de la matière première à la vente'],
+  ventes:['Ventes / point de vente','Encaissez une vente : stock et caisse mis à jour automatiquement'],
+  clients:['Clients & fidélité','Base clients et programme de points'],
+  fournisseurs:['Fournisseurs','Répertoire de vos fournisseurs'],
+  achats:['Commandes d\'achat','Commandez et réceptionnez vos matières premières'],
+  finances:['Finances',"Chiffre d'affaires, dépenses et marge, calculés automatiquement"],
+  personnel:['Personnel','Équipe et coûts de main-d\'oeuvre'],
+  rapports:['Rapports','Analyses et classements'],
+  parametres:['Paramètres',"Réglages de l'entreprise et de l'ERP"],
+};
+function goTo(id){ state.active = id; renderAll(); window.scrollTo(0,0); }
+function renderAll(){
+  buildNav();
+  const [title,sub] = PAGE_META[state.active];
+  document.getElementById('pageTitle').textContent = title;
+  document.getElementById('pageSub').textContent = sub;
+  const pill = document.getElementById('alertPill');
+  const n = totalAlertes();
+  if(n>0){ pill.style.display='flex'; pill.innerHTML = `⚠ ${n} alerte${n>1?'s':''}`; } else { pill.style.display='none'; }
+  const c = document.getElementById('content');
+  c.innerHTML = '';
+  RENDERERS[state.active](c);
+}
+function tickClock(){
+  document.getElementById('clockDate').textContent = new Date().toLocaleDateString('fr-FR',{weekday:'long', day:'numeric', month:'long', year:'numeric'});
+}
+
+function showToast(msg){
+  const root = document.getElementById('toastRoot');
+  const t = document.createElement('div'); t.className='toast'; t.textContent = msg;
+  root.appendChild(t);
+  setTimeout(()=>t.remove(), 2600);
+}
+function esc(s){ return (s??'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- MODAL ENGINE ---------- */
+function openModal(title, bodyHTML, footHTML){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `
+    <div class="modal-bg" id="modalBg">
+      <div class="modal">
+        <div class="modal-head"><h3>${title}</h3><button class="modal-close" onclick="closeModal()">×</button></div>
+        <div class="modal-body">${bodyHTML}</div>
+        <div class="modal-foot">${footHTML}</div>
+      </div>
+    </div>`;
+  document.getElementById('modalBg').addEventListener('click', e=>{ if(e.target.id==='modalBg') closeModal(); });
+}
+function closeModal(){ document.getElementById('modalRoot').innerHTML = ''; }
+function flavorDotOptions(selected){
+  return FLAVOR_PALETTE.map(f=>`<option value="${f.hex}" ${selected===f.hex?'selected':''}>${f.name}</option>`).join('');
+}
+
+/* ======================================================================
+   RENDERERS PAR MODULE
+   ====================================================================== */
+const RENDERERS = {};
+
+/* ---------------- DASHBOARD ---------------- */
+RENDERERS.dashboard = (c)=>{
+  const today = todayISO();
+  const ventesJour = DB.ventes.filter(v=>v.date===today);
+  const caJour = ventesJour.reduce((s,v)=>s+v.total,0);
+  const moisPrefix = today.slice(0,7);
+  const ventesMois = DB.ventes.filter(v=>v.date.startsWith(moisPrefix));
+  const caMois = ventesMois.reduce((s,v)=>s+v.total,0);
+  const margeMois = ventesMois.reduce((s,v)=>s+(v.marge||0),0);
+  const prodJour = DB.production.filter(p=>p.date===today).reduce((s,p)=>s+p.quantiteProduite,0);
+  const stockTotalPF = DB.stockPF.reduce((s,l)=>s+l.quantite,0);
+
+  const alMP = stockMPAlertes(), alDLC = stockPFAlertesDLC();
+
+  // top recettes du mois
+  const parRecette = {};
+  ventesMois.forEach(v=> v.lignes.forEach(l=>{ parRecette[l.recetteId] = (parRecette[l.recetteId]||0) + l.qty; }));
+  const top = Object.entries(parRecette).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxTop = top.length? top[0][1] : 1;
+
+  c.innerHTML = `
+    <div class="grid-kpi">
+      <div class="kpi"><div class="lbl">CA aujourd'hui</div><div class="val">${fmtMoney(caJour)}</div><div class="sub">${ventesJour.length} vente${ventesJour.length>1?'s':''}</div></div>
+      <div class="kpi rose"><div class="lbl">CA du mois</div><div class="val">${fmtMoney(caMois)}</div><div class="sub">Marge brute : ${fmtMoney(margeMois)}</div></div>
+      <div class="kpi or"><div class="lbl">Production du jour</div><div class="val">${fmtNum(prodJour)} L</div><div class="sub">${DB.production.filter(p=>p.date===today).length} lot(s) fabriqué(s)</div></div>
+      <div class="kpi bleu"><div class="lbl">Stock produits finis</div><div class="val">${fmtNum(stockTotalPF)} L</div><div class="sub">${DB.stockPF.filter(l=>l.quantite>0).length} lot(s) actif(s)</div></div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-head"><h3>Top saveurs du mois</h3></div>
+        <div class="panel-body">
+          ${top.length ? top.map(([rid,qty])=>{
+            const r = recette(rid); if(!r) return '';
+            return `<div style="margin-bottom:11px;">
+              <div class="flex" style="justify-content:space-between;font-size:13px;margin-bottom:4px;">
+                <span class="flex gap6"><span class="flavor-dot" style="background:${r.couleur}"></span>${esc(r.nom)}</span>
+                <span class="num-cell">${fmtNum(qty)} L</span>
+              </div>
+              <div class="progressbar"><div style="width:${(qty/maxTop*100)}%;background:${r.couleur}"></div></div>
+            </div>`;
+          }).join('') : `<div class="empty-row">Aucune vente ce mois-ci pour l'instant.</div>`}
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>Alertes</h3></div>
+        <div class="panel-body">
+          ${alMP.length===0 && alDLC.length===0 ? `<div class="empty-row">Tout va bien, aucune alerte 🙂</div>` : ''}
+          ${alMP.map(m=>`<div class="stat-mini"><span>▤ ${esc(m.nom)} — stock bas</span><span class="tag bad">${fmtNum(m.quantite)} ${m.unite}</span></div>`).join('')}
+          ${alDLC.map(l=>{ const r=recette(l.recetteId); const d = daysBetween(todayISO(), l.dlc);
+            return `<div class="stat-mini"><span>⌘ ${esc(r?r.nom:'?')} — DLC proche</span><span class="tag warn">${d<0?'expiré':d+' j'}</span></div>`; }).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Dernières ventes</h3><button class="btn small" onclick="goTo('ventes')">Ouvrir le point de vente</button></div>
+      <div class="panel-body" style="padding-top:0;">
+        <table><thead><tr><th>Date</th><th>Client</th><th>Détail</th><th style="text-align:right;">Total</th></tr></thead>
+        <tbody>
+        ${DB.ventes.slice(-6).reverse().map(v=>`
+          <tr><td>${v.date}</td><td>${v.clientId ? esc(client(v.clientId)?.nom||'—') : 'Passage'}</td>
+          <td>${v.lignes.map(l=>esc(recette(l.recetteId)?.nom||'?')+' ×'+fmtNum(l.qty)).join(', ')}</td>
+          <td style="text-align:right;" class="num-cell">${fmtMoney(v.total)}</td></tr>`).join('') || `<tr><td colspan="4" class="empty-row">Aucune vente enregistrée.</td></tr>`}
+        </tbody></table>
+      </div>
+    </div>
+  `;
+};
+
+/* ---------------- RECETTES ---------------- */
+RENDERERS.recettes = (c)=>{
+  c.innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><h3>Fiches techniques (${DB.recettes.length})</h3><button class="btn" onclick="formRecette()">+ Nouvelle recette</button></div>
+      <div class="panel-body" style="padding-top:0;">
+        <table>
+          <thead><tr><th>Saveur</th><th>Rendement</th><th>Conservation</th><th>Coût / L</th><th>Prix conseillé</th><th>Prix de vente</th><th>Marge</th><th></th></tr></thead>
+          <tbody>
+          ${DB.recettes.map(r=>{
+            const cout = coutRecette(r); const conseille = cout*(DB.parametres.coefficientMarge||3);
+            const marge = r.prixVente - cout;
+            return `<tr>
+              <td class="flex gap6"><span class="flavor-dot" style="background:${r.couleur}"></span><b>${esc(r.nom)}</b></td>
+              <td class="num-cell">${fmtNum(r.rendement)} ${r.unite}</td>
+              <td>${r.dureeConservationJours} j</td>
+              <td class="num-cell">${fmtMoney(cout)}</td>
+              <td class="num-cell muted">${fmtMoney(conseille)}</td>
+              <td class="num-cell"><b>${fmtMoney(r.prixVente)}</b></td>
+              <td><span class="tag ${marge>=0?'ok':'bad'}">${fmtMoney(marge)}/${r.unite}</span></td>
+              <td><button class="btn small secondary" onclick="formRecette('${r.id}')">Modifier</button>
+                  <button class="btn small danger" onclick="deleteRecette('${r.id}')">Suppr.</button></td>
+            </tr>`;
+          }).join('') || `<tr><td colspan="8" class="empty-row">Aucune recette. Créez votre première fiche technique.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+};
+
+function formRecette(id){
+  const r = id ? recette(id) : {id:null, nom:'', couleur:FLAVOR_PALETTE[0].hex, rendement:10, unite:'L', dureeConservationJours:90, prixVente:0, ingredients:[]};
+  let ingRows = r.ingredients.length ? r.ingredients : [{mpId:DB.stockMP[0]?.id, qty:0}];
+
+  function renderIngRows(){
+    return ingRows.map((ing,i)=>`
+      <div class="ing-row" data-idx="${i}">
+        <select onchange="tmpIng[${i}].mpId=this.value; refreshCost();">
+          ${DB.stockMP.map(m=>`<option value="${m.id}" ${ing.mpId===m.id?'selected':''}>${esc(m.nom)} (${m.unite})</option>`).join('')}
+        </select>
+        <input type="number" step="0.01" value="${ing.qty}" onchange="tmpIng[${i}].qty=parseFloat(this.value)||0; refreshCost();" placeholder="Qté">
+        <span class="muted" style="font-size:12px;">${mpById(ing.mpId)?.unite||''}</span>
+        <button class="btn small danger" onclick="tmpIng.splice(${i},1); rerenderIngList();">×</button>
+      </div>`).join('');
+  }
+
+  window.tmpIng = JSON.parse(JSON.stringify(ingRows));
+  window.rerenderIngList = ()=>{ document.getElementById('ingList').innerHTML = ingRows.length? '' : '';
+    ingRows = window.tmpIng;
+    document.getElementById('ingList').innerHTML = renderIngRows();
+    refreshCost();
+  };
+  window.refreshCost = ()=>{
+    let cost = 0;
+    window.tmpIng.forEach(ing=>{ const mp = mpById(ing.mpId); if(mp) cost += (mp.coutUnitaire||0)*(ing.qty||0); });
+    const rendement = parseFloat(document.getElementById('f_rendement').value)||1;
+    const coutUnit = cost/rendement;
+    document.getElementById('costPreview').textContent = fmtMoney(coutUnit) + ' / unité — prix conseillé ' + fmtMoney(coutUnit*(DB.parametres.coefficientMarge||3));
+  };
+
+  const body = `
+    <div class="field-row">
+      <div class="field"><label>Nom de la saveur</label><input id="f_nom" value="${esc(r.nom)}" placeholder="Ex. Pistache"></div>
+      <div class="field"><label>Couleur / famille</label><select id="f_couleur">${flavorDotOptions(r.couleur)}</select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Rendement du lot</label><input id="f_rendement" type="number" step="0.1" value="${r.rendement}" oninput="refreshCost()"></div>
+      <div class="field"><label>Unité</label><select id="f_unite">${UNITES.map(u=>`<option ${r.unite===u?'selected':''}>${u}</option>`).join('')}</select></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Durée de conservation (jours, DLC)</label><input id="f_dlc" type="number" value="${r.dureeConservationJours}"></div>
+      <div class="field"><label>Prix de vente public</label><input id="f_prix" type="number" step="0.1" value="${r.prixVente}"></div>
+    </div>
+    <div class="field">
+      <label>Ingrédients (composition du lot)</label>
+      <div id="ingList">${renderIngRows()}</div>
+      <button class="btn small secondary" style="margin-top:4px;width:fit-content;" onclick="window.tmpIng.push({mpId:DB.stockMP[0]?.id, qty:0}); rerenderIngList();">+ Ajouter un ingrédient</button>
+    </div>
+    <div class="hint" style="margin-top:8px;padding:10px;background:var(--cream-2);border-radius:8px;">
+      Coût de revient calculé automatiquement : <b id="costPreview">${fmtMoney(coutRecette(r))} / unité</b>
+    </div>
+  `;
+  const foot = `<button class="btn secondary" onclick="closeModal()">Annuler</button>
+    <button class="btn" onclick="saveRecette('${r.id||''}')">Enregistrer</button>`;
+  openModal(id ? 'Modifier la recette' : 'Nouvelle recette', body, foot);
+  setTimeout(refreshCost, 30);
+}
+function saveRecette(id){
+  const nom = document.getElementById('f_nom').value.trim();
+  if(!nom){ showToast('Le nom de la saveur est requis'); return; }
+  const data = {
+    nom, couleur: document.getElementById('f_couleur').value,
+    rendement: parseFloat(document.getElementById('f_rendement').value)||1,
+    unite: document.getElementById('f_unite').value,
+    dureeConservationJours: parseInt(document.getElementById('f_dlc').value)||90,
+    prixVente: parseFloat(document.getElementById('f_prix').value)||0,
+    ingredients: window.tmpIng.filter(i=>i.qty>0),
+  };
+  if(id){ Object.assign(recette(id), data); showToast('Recette mise à jour'); }
+  else{ DB.recettes.push({id:uid(), ...data}); showToast('Recette créée'); }
+  saveDB(); closeModal(); renderAll();
+}
+function deleteRecette(id){
+  if(!confirm('Supprimer cette recette ?')) return;
+  DB.recettes = DB.recettes.filter(r=>r.id!==id);
+  saveDB(); renderAll();
+}
+
+/* ---------------- STOCK MATIERES PREMIERES ---------------- */
+RENDERERS.stockMP = (c)=>{
+  c.innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><h3>Matières premières (${DB.stockMP.length})</h3><button class="btn" onclick="formMP()">+ Ajouter un article</button></div>
+      <div class="panel-body" style="padding-top:0;">
+        <table>
+          <thead><tr><th>Article</th><th>Quantité</th><th>Seuil alerte</th><th>Coût unitaire</th><th>Valeur stock</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+          ${DB.stockMP.map(m=>{
+            const bas = m.quantite<=m.seuilAlerte;
+            return `<tr>
+              <td><b>${esc(m.nom)}</b></td>
+              <td class="num-cell">${fmtNum(m.quantite)} ${m.unite}</td>
+              <td class="num-cell muted">${fmtNum(m.seuilAlerte)} ${m.unite}</td>
+              <td class="num-cell">${fmtMoney(m.coutUnitaire)}</td>
+              <td class="num-cell">${fmtMoney(m.quantite*m.coutUnitaire)}</td>
+              <td>${bas?'<span class="tag bad">Stock bas</span>':'<span class="tag ok">OK</span>'}</td>
+              <td><button class="btn small secondary" onclick="formMP('${m.id}')">Modifier</button></td>
+            </tr>`;
+          }).join('') || `<tr><td colspan="7" class="empty-row">Aucun article en stock.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+};
+function formMP(id){
+  const m = id ? mpById(id) : {nom:'', unite:'kg', quantite:0, seuilAlerte:0, coutUnitaire:0};
+  const body = `
+    <div class="field"><label>Nom de l'article</label><input id="m_nom" value="${esc(m.nom)}" placeholder="Ex. Lait entier"></div>
+    <div class="field-row">
+      <div class="field"><label>Unité</label><select id="m_unite">${UNITES.map(u=>`<option ${m.unite===u?'selected':''}>${u}</option>`).join('')}</select></div>
+      <div class="field"><label>Coût unitaire</label><input id="m_cout" type="number" step="0.01" value="${m.coutUnitaire}"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Quantité en stock</label><input id="m_qte" type="number" step="0.1" value="${m.quantite}"></div>
+      <div class="field"><label>Seuil d'alerte</label><input id="m_seuil" type="number" step="0.1" value="${m.seuilAlerte}"></div>
+    </div>
+  `;
+  const foot = `<button class="btn secondary" onclick="closeModal()">Annuler</button><button class="btn" onclick="saveMP('${id||''}')">Enregistrer</button>`;
+  openModal(id?'Modifier l\'article':'Nouvel article', body, foot);
+}
+function saveMP(id){
+  const nom = document.getElementById('m_nom').value.trim();
+  if(!nom){ showToast('Le nom est requis'); return; }
+  const data = { nom, unite:document.getElementById('m_unite').value, coutUnitaire:parseFloat(document.getElementById('m_cout').value)||0,
+    quantite:parseFloat(document.getElementById('m_qte').value)||0, seuilAlerte:parseFloat(document.getElementById('m_seuil').value)||0 };
+  if(id){ Object.assign(mpById(id), data); } else { DB.stockMP.push({id:uid(), ...data, fournisseurId:null}); }
+  saveDB(); closeModal(); renderAll(); showToast('Stock mis à jour');
+}
+
+/* ---------------- PRODUCTION ---------------- */
+RENDERERS.production = (c)=>{
+  c.innerHTML = `
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-head"><h3>Lancer une fabrication</h3></div>
+        <div class="panel-body">
+          <div class="field"><label>Recette</label>
+            <select id="p_recette" onchange="updateProdPreview()">
+              ${DB.recettes.map(r=>`<option value="${r.id}">${esc(r.nom)}</option>`).join('') || '<option value="">Aucune recette</option>'}
+            </select>
+          </div>
+          <div class="field"><label>Nombre de lots (x rendement)</label><input id="p_lots" type="number" min="1" value="1" oninput="updateProdPreview()"></div>
+          <div id="prodPreview" class="panel" style="box-shadow:none;border-style:dashed;"></div>
+          <button class="btn" style="margin-top:10px;" onclick="lancerProduction()">Lancer la production</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Historique de production</h3></div>
+        <div class="panel-body" style="padding-top:0;">
+          <table><thead><tr><th>Date</th><th>Saveur</th><th>Qté</th><th>Coût</th></tr></thead>
+          <tbody>${DB.production.slice(-10).reverse().map(p=>{const r=recette(p.recetteId);
+            return `<tr><td>${p.date}</td><td class="flex gap6"><span class="flavor-dot" style="background:${r?r.couleur:'#ccc'}"></span>${esc(r?r.nom:'?')}</td>
+            <td class="num-cell">${fmtNum(p.quantiteProduite)} ${r?r.unite:''}</td><td class="num-cell">${fmtMoney(p.coutTotal)}</td></tr>`;
+          }).join('') || '<tr><td colspan="4" class="empty-row">Aucune production enregistrée.</td></tr>'}</tbody></table>
+        </div>
+      </div>
+    </div>
+  `;
+  updateProdPreview();
+};
+function updateProdPreview(){
+  const rid = document.getElementById('p_recette')?.value;
+  const nb = parseFloat(document.getElementById('p_lots')?.value)||0;
+  const box = document.getElementById('prodPreview');
+  if(!box) return;
+  const r = recette(rid);
+  if(!r){ box.innerHTML = '<div class="panel-body muted">Créez d\'abord une recette.</div>'; return; }
+  let rows = r.ingredients.map(ing=>{
+    const mp = mpById(ing.mpId); const besoin = ing.qty*nb;
+    const suffisant = mp && mp.quantite>=besoin;
+    return `<div class="stat-mini"><span>${esc(mp?mp.nom:'?')}</span><span class="${suffisant?'':'tag bad'} num-cell">${fmtNum(besoin)} ${mp?mp.unite:''} ${suffisant?'':'(insuffisant)'}</span></div>`;
+  }).join('');
+  box.innerHTML = `<div class="panel-body">
+    <div style="font-size:12.5px;font-weight:700;margin-bottom:6px;">Besoins en matières premières</div>
+    ${rows}
+    <div class="stat-mini" style="margin-top:6px;"><b>Production obtenue</b><b class="num-cell">${fmtNum(r.rendement*nb)} ${r.unite}</b></div>
+    <div class="stat-mini"><b>Coût total du lot</b><b class="num-cell">${fmtMoney(coutRecette(r)*r.rendement*nb)}</b></div>
+  </div>`;
+}
+function lancerProduction(){
+  const rid = document.getElementById('p_recette').value;
+  const nb = parseFloat(document.getElementById('p_lots').value)||0;
+  const r = recette(rid);
+  if(!r || nb<=0){ showToast('Sélectionnez une recette et une quantité valide'); return; }
+  const manque = [];
+  r.ingredients.forEach(ing=>{ const mp = mpById(ing.mpId); if(!mp || mp.quantite < ing.qty*nb) manque.push(mp?mp.nom:'?'); });
+  if(manque.length){ showToast('Stock insuffisant : ' + manque.join(', ')); return; }
+  r.ingredients.forEach(ing=>{ mpById(ing.mpId).quantite -= ing.qty*nb; });
+  const qteProduite = r.rendement*nb;
+  const coutUnitaire = coutRecette(r);
+  const dateProd = todayISO();
+  const dlc = addDays(dateProd, r.dureeConservationJours||90);
+  const lotId = uid();
+  DB.stockPF.push({id:lotId, recetteId:rid, quantite:qteProduite, quantiteInitiale:qteProduite, dateProduction:dateProd, dlc, coutUnitaire});
+  DB.production.push({id:uid(), date:dateProd, recetteId:rid, nbLots:nb, quantiteProduite:qteProduite, coutTotal:coutUnitaire*qteProduite, lotId});
+  saveDB(); renderAll(); showToast(`Production lancée : ${fmtNum(qteProduite)} ${r.unite} de ${r.nom}`);
+}
+
+/* ---------------- STOCK PRODUITS FINIS ---------------- */
+RENDERERS.stockPF = (c)=>{
+  const lots = [...DB.stockPF].filter(l=>l.quantite>0).sort((a,b)=>a.dlc.localeCompare(b.dlc));
+  c.innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><h3>Lots disponibles à la vente (${lots.length})</h3></div>
+      <div class="panel-body" style="padding-top:0;">
+        <table><thead><tr><th>Saveur</th><th>Lot produit le</th><th>DLC</th><th>Quantité restante</th><th>Statut</th></tr></thead>
+        <tbody>${lots.map(l=>{
+          const r = recette(l.recetteId); const j = daysBetween(todayISO(), l.dlc);
+          let tag = j<0?'<span class="tag bad">Expiré</span>': j<=(DB.parametres.seuilDLCAlerteJours||7)?`<span class="tag warn">${j} j restants</span>`:'<span class="tag ok">Frais</span>';
+          return `<tr><td class="flex gap6"><span class="flavor-dot" style="background:${r?r.couleur:'#ccc'}"></span>${esc(r?r.nom:'?')}</td>
+          <td>${l.dateProduction}</td><td>${l.dlc}</td>
+          <td class="num-cell">${fmtNum(l.quantite)} ${r?r.unite:''} <span class="muted">/ ${fmtNum(l.quantiteInitiale)}</span></td><td>${tag}</td></tr>`;
+        }).join('') || '<tr><td colspan="5" class="empty-row">Aucun stock de produit fini. Lancez une production.</td></tr>'}</tbody></table>
+      </div>
+    </div>
+  `;
+};
+
+/* ---------------- TRACABILITE ---------------- */
+RENDERERS.tracabilite = (c)=>{
+  const lots = [...DB.stockPF].sort((a,b)=>b.dateProduction.localeCompare(a.dateProduction));
+  c.innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><h3>Historique complet des lots</h3></div>
+      <div class="panel-body" style="padding-top:0;">
+        <table><thead><tr><th>N° lot</th><th>Saveur</th><th>Production</th><th>DLC</th><th>Qté initiale</th><th>Qté restante</th><th>Écoulé</th></tr></thead>
+        <tbody>${lots.map(l=>{
+          const r = recette(l.recetteId);
+          const vendu = l.quantiteInitiale - l.quantite;
+          const pct = l.quantiteInitiale? Math.round(vendu/l.quantiteInitiale*100):0;
+          return `<tr><td class="num-cell muted">${l.id.slice(0,6).toUpperCase()}</td>
+            <td class="flex gap6"><span class="flavor-dot" style="background:${r?r.couleur:'#ccc'}"></span>${esc(r?r.nom:'?')}</td>
+            <td>${l.dateProduction}</td><td>${l.dlc}</td>
+            <td class="num-cell">${fmtNum(l.quantiteInitiale)}</td><td class="num-cell">${fmtNum(l.quantite)}</td>
+            <td style="width:120px;"><div class="progressbar"><div style="width:${pct}%;"></div></div></td></tr>`;
+        }).join('') || '<tr><td colspan="7" class="empty-row">Aucun lot tracé pour le moment.</td></tr>'}</tbody></table>
+      </div>
+    </div>
+  `;
+};
+
+/* ---------------- VENTES / POS ---------------- */
+let panier = [];
+RENDERERS.ventes = (c)=>{
+  panier = panier || [];
+  c.innerHTML = `
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-head"><h3>Nouvelle vente</h3></div>
+        <div class="panel-body">
+          <div class="field"><label>Client (optionnel)</label>
+            <select id="v_client"><option value="">— Vente au comptoir —</option>
+              ${DB.clients.map(cl=>`<option value="${cl.id}">${esc(cl.nom)} (${cl.points||0} pts)</option>`).join('')}
+            </select>
+          </div>
+          <div class="field-row" style="align-items:flex-end;">
+            <div class="field"><label>Saveur</label>
+              <select id="v_recette">${DB.recettes.map(r=>`<option value="${r.id}">${esc(r.nom)} — dispo ${fmtNum(stockPFDispo(r.id))} ${r.unite}</option>`).join('') || '<option value="">Aucune</option>'}</select>
+            </div>
+            <div class="field"><label>Quantité</label><input id="v_qty" type="number" step="0.1" min="0.1" value="1"></div>
+          </div>
+          <button class="btn secondary" onclick="ajoutPanier()">+ Ajouter au panier</button>
+
+          <div style="margin-top:16px;">
+            <table><thead><tr><th>Saveur</th><th>Qté</th><th>PU</th><th>Sous-total</th><th></th></tr></thead>
+            <tbody>${panier.map((l,i)=>{const r=recette(l.recetteId); return `<tr>
+              <td>${esc(r?r.nom:'?')}</td><td class="num-cell">${fmtNum(l.qty)}</td>
+              <td class="num-cell">${fmtMoney(r?r.prixVente:0)}</td><td class="num-cell">${fmtMoney((r?r.prixVente:0)*l.qty)}</td>
+              <td><button class="btn small danger" onclick="panier.splice(${i},1); renderAll();">×</button></td></tr>`;}).join('') || '<tr><td colspan="5" class="empty-row">Panier vide</td></tr>'}
+            </tbody></table>
+          </div>
+          <div class="field" style="margin-top:14px;"><label>Mode de paiement</label>
+            <select id="v_paiement"><option>Carte</option><option>Espèces</option><option>Mobile</option></select>
+          </div>
+          <div class="stat-mini" style="font-size:16px;"><b>Total</b><b class="num-cell">${fmtMoney(panier.reduce((s,l)=>{const r=recette(l.recetteId);return s+(r?r.prixVente:0)*l.qty;},0))}</b></div>
+          <button class="btn" style="margin-top:8px;width:100%;justify-content:center;" onclick="validerVente()" ${panier.length?'':'disabled'}>Encaisser la vente</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h3>Historique des ventes</h3></div>
+        <div class="panel-body" style="padding-top:0;max-height:640px;overflow-y:auto;">
+          <table><thead><tr><th>Date</th><th>Détail</th><th>Total</th><th>Marge</th></tr></thead>
+          <tbody>${[...DB.ventes].reverse().map(v=>`<tr>
+            <td>${v.date}</td><td>${v.lignes.map(l=>esc(recette(l.recetteId)?.nom||'?')+' ×'+fmtNum(l.qty)).join(', ')}</td>
+            <td class="num-cell">${fmtMoney(v.total)}</td><td class="num-cell">${fmtMoney(v.marge)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty-row">Aucune vente.</td></tr>'}
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+  `;
+};
+function ajoutPanier(){
+  const rid = document.getElementById('v_recette').value;
+  const qty = parseFloat(document.getElementById('v_qty').value)||0;
+  if(!rid || qty<=0){ showToast('Choisissez une saveur et une quantité'); return; }
+  const dispo = stockPFDispo(rid) - panier.filter(l=>l.recetteId===rid).reduce((s,l)=>s+l.qty,0);
+  if(qty>dispo){ showToast('Stock insuffisant (' + fmtNum(dispo) + ' disponible)'); return; }
+  const existing = panier.find(l=>l.recetteId===rid);
+  if(existing) existing.qty += qty; else panier.push({recetteId:rid, qty});
+  renderAll();
+}
+function validerVente(){
+  if(!panier.length) return;
+  const clientId = document.getElementById('v_client').value || null;
+  const modePaiement = document.getElementById('v_paiement').value;
+  let total=0, coutTotal=0; const lignesDetail=[];
+  for(const l of panier){
+    let restant = l.qty;
+    const lots = DB.stockPF.filter(x=>x.recetteId===l.recetteId && x.quantite>0).sort((a,b)=>a.dlc.localeCompare(b.dlc));
+    const r = recette(l.recetteId);
+    for(const lot of lots){
+      if(restant<=0) break;
+      const pris = Math.min(lot.quantite, restant);
+      lot.quantite -= pris; coutTotal += pris*lot.coutUnitaire; restant -= pris;
+    }
+    total += l.qty*r.prixVente;
+    lignesDetail.push({recetteId:l.recetteId, qty:l.qty, prixUnitaire:r.prixVente, sousTotal:l.qty*r.prixVente});
+  }
+  const vente = {id:uid(), date:todayISO(), clientId, lignes:lignesDetail, total, coutTotal, marge:total-coutTotal, modePaiement};
+  DB.ventes.push(vente);
+  if(clientId){ const cl = client(clientId); if(cl){ cl.points = (cl.points||0) + Math.floor(total*(DB.parametres.tauxFidelite||1)); cl.totalDepense = (cl.totalDepense||0)+total; } }
+  panier = [];
+  saveDB(); renderAll(); showToast('Vente encaissée : ' + fmtMoney(total));
+}
+
+/* ---------------- CLIENTS ---------------- */
+RENDERERS.clients = (c)=>{
+  c.innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><h3>Clients (${DB.clients.length})</h3><button class="btn" onclick="formClient()">+ Nouveau client</button></div>
+      <div class="panel-body" style="padding-top:0;">
+        <table><thead><tr><th>Nom</th><th>Téléphone</th><th>Total dépensé</th><th>Points fidélité</th><th></th></tr></thead>
+        <tbody>${DB.clients.map(cl=>`<tr>
+          <td><b>${esc(cl.nom)}</b></td><td>${esc(cl.tel||'—')}</td>
+          <td class="num-cell">${fmtMoney(cl.totalDepense||0)}</td>
+          <td><span class="tag info">${cl.points||0} pts</span></td>
+          <td><button class="btn small secondary" onclick="formClient('${cl.id}')">Modifier</button></td>
+        </tr>`).join('') || '<tr><td colspan="5" class="empty-row">Aucun client enregistré.</td></tr>'}</tbody></table>
+      </div>
+    </div>
+  `;
+};
+function formClient(id){
+  const cl = id ? client(id) : {nom:'', tel:'', email:''};
+  const body = `
+    <div class="field"><label>Nom</label><input id="c_nom" value="${esc(cl.nom)}"></div>
+    <div class="field-row">
+      <div class="field"><label>Téléphone</label><input id="c_tel" value="${esc(cl.tel||'')}"></div>
+      <div class="field"><label>Email</label><input id="c_email" value="${esc(cl.email||'')}"></div>
+    </div>`;
+  const foot = `<button class="btn secondary" onclick="closeModal()">Annuler</button><button class="btn" onclick="saveClient('${id||''}')">Enregistrer</button>`;
+  openModal(id?'Modifier le client':'Nouveau client', body, foot);
+}
+function saveClient(id){
+  const nom = document.getElementById('c_nom').value.trim();
+  if(!nom){ showToast('Le nom est requis'); return; }
+  const data = {nom, tel:document.getElementById('c_tel').value, email:document.getElementById('c_email').value};
+  if(id){ Object.assign(client(id), data); } else { DB.clients.push({id:uid(), ...data, points:0, totalDepense:0, dateInscription:todayISO()}); }
+  saveDB(); closeModal(); renderAll(); showToast('Client enregistré');
+}
+
+/* ---------------- FOURNISSEURS ---------------- */
+RENDERERS.fournisseurs = (c)=>{
+  c.innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><h3>Fournisseurs (${DB.fournisseurs.length})</h3><button class="btn" onclick="formFournisseur()">+ Nouveau fournisseur</button></div>
+      <div class="panel-body" style="padding-top:0;">
+        <table><thead><tr><th>Nom</th><th>Contact</th><th>Téléphone</th><th></th></tr></thead>
+        <tbody>${DB.fournisseurs.map(f=>`<tr><td><b>${esc(f.nom)}</b></td><td>${esc(f.contact||'—')}</td><td>${esc(f.tel||'—')}</td>
+          <td><button class="btn small secondary" onclick="formFournisseur('${f.id}')">Modifier</button></td></tr>`).join('') || '<tr><td colspan="4" class="empty-row">Aucun fournisseur.</td></tr>'}</tbody></table>
+      </div>
+    </div>
+  `;
+};
+function formFournisseur(id){
+  const f = id ? fournisseur(id) : {nom:'', contact:'', tel:'', email:''};
+  const body = `
+    <div class="field"><label>Nom de l'entreprise</label><input id="f_nomf" value="${esc(f.nom)}"></div>
+    <div class="field-row">
+      <div class="field"><label>Contact</label><input id="f_contact" value="${esc(f.contact||'')}"></div>
+      <div class="field"><label>Téléphone</label><input id="f_tel" value="${esc(f.tel||'')}"></div>
+    </div>
+    <div class="field"><label>Email</label><input id="f_email" value="${esc(f.email||'')}"></div>`;
+  const foot = `<button class="btn secondary" onclick="closeModal()">Annuler</button><button class="btn" onclick="saveFournisseur('${id||''}')">Enregistrer</button>`;
+  openModal(id?'Modifier le fournisseur':'Nouveau fournisseur', body, foot);
+}
+function saveFournisseur(id){
+  const nom = document.getElementById('f_nomf').value.trim();
+  if(!nom){ showToast('Le nom est requis'); return; }
+  const data = {nom, contact:document.getElementById('f_contact').value, tel:document.getElementById('f_tel').value, email:document.getElementById('f_email').value};
+  if(id){ Object.assign(fournisseur(id), data); } else { DB.fournisseurs.push({id:uid(), ...data}); }
+  saveDB(); closeModal(); renderAll(); showToast('Fournisseur enregistré');
+}
+
+/* ---------------- ACHATS ---------------- */
+let achatLignes = [];
+RENDERERS.achats = (c)=>{
+  c.innerHTML = `
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-head"><h3>Nouvelle commande</h3></div>
+        <div class="panel-body">
+          <div class="field"><label>Fournisseur</label>
+            <select id="a_fournisseur">${DB.fournisseurs.map(f=>`<option value="${f.id}">${esc(f.nom)}</option>`).join('') || '<option value="">Aucun fournisseur</option>'}</select>
+          </div>
+          <div class="field-row" style="align-items:flex-end;">
+            <div class="field"><label>Article</label><select id="a_mp">${DB.stockMP.map(m=>`<option value="${m.id}">${esc(m.nom)}</option>`).join('')}</select></div>
+            <div class="field"><label>Quantité</label><input id="a_qty" type="number" step="0.1" value="10"></div>
+          </div>
+          <div class="field"><label>Prix unitaire d'achat</label><input id="a_prix" type="number" step="0.01" value="0"></div>
+          <button class="btn secondary" onclick="ajoutLigneAchat()">+ Ajouter à la commande</button>
+          <table style="margin-top:12px;"><thead><tr><th>Article</th><th>Qté</th><th>PU</th><th>Total</th><th></th></tr></thead>
+          <tbody>${achatLignes.map((l,i)=>{const mp=mpById(l.mpId);return `<tr><td>${esc(mp?mp.nom:'?')}</td><td class="num-cell">${fmtNum(l.qty)}</td>
+            <td class="num-cell">${fmtMoney(l.prixUnitaire)}</td><td class="num-cell">${fmtMoney(l.qty*l.prixUnitaire)}</td>
+            <td><button class="btn small danger" onclick="achatLignes.splice(${i},1);renderAll();">×</button></td></tr>`;}).join('') || '<tr><td colspan="5" class="empty-row">Aucune ligne</td></tr>'}</tbody></table>
+          <button class="btn" style="margin-top:10px;width:100%;justify-content:center;" onclick="validerAchat()" ${achatLignes.length?'':'disabled'}>Passer la commande</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Commandes en cours / historique</h3></div>
+        <div class="panel-body" style="padding-top:0;">
+          <table><thead><tr><th>Date</th><th>Fournisseur</th><th>Total</th><th>Statut</th><th></th></tr></thead>
+          <tbody>${[...DB.achats].reverse().map(a=>`<tr><td>${a.date}</td><td>${esc(fournisseur(a.fournisseurId)?.nom||'—')}</td>
+            <td class="num-cell">${fmtMoney(a.total)}</td>
+            <td>${a.statut==='Reçu'?'<span class="tag ok">Reçu</span>':'<span class="tag warn">En attente</span>'}</td>
+            <td>${a.statut!=='Reçu'?`<button class="btn small" onclick="receptionnerAchat('${a.id}')">Réceptionner</button>`:''}</td></tr>`).join('') || '<tr><td colspan="5" class="empty-row">Aucune commande.</td></tr>'}</tbody></table>
+        </div>
+      </div>
+    </div>
+  `;
+};
+function ajoutLigneAchat(){
+  const mpId = document.getElementById('a_mp').value;
+  const qty = parseFloat(document.getElementById('a_qty').value)||0;
+  const prixUnitaire = parseFloat(document.getElementById('a_prix').value)||0;
+  if(!mpId||qty<=0){ showToast('Complétez les champs'); return; }
+  achatLignes.push({mpId, qty, prixUnitaire});
+  renderAll();
+}
+function validerAchat(){
+  const fournisseurId = document.getElementById('a_fournisseur').value || null;
+  const total = achatLignes.reduce((s,l)=>s+l.qty*l.prixUnitaire,0);
+  DB.achats.push({id:uid(), date:todayISO(), fournisseurId, lignes:[...achatLignes], total, statut:'En attente'});
+  achatLignes = [];
+  saveDB(); renderAll(); showToast('Commande créée');
+}
+function receptionnerAchat(id){
+  const a = DB.achats.find(x=>x.id===id); if(!a || a.statut==='Reçu') return;
+  a.lignes.forEach(l=>{ const mp = mpById(l.mpId); if(mp){ mp.quantite += l.qty; mp.coutUnitaire = l.prixUnitaire; } });
+  a.statut = 'Reçu'; a.dateReception = todayISO();
+  DB.charges.push({id:uid(), date:todayISO(), libelle:'Achat matières premières — '+(fournisseur(a.fournisseurId)?.nom||'fournisseur'), montant:a.total, categorie:'Matières premières'});
+  saveDB(); renderAll(); showToast('Commande réceptionnée, stock mis à jour');
+}
+
+/* ---------------- FINANCES ---------------- */
+RENDERERS.finances = (c)=>{
+  const moisPrefix = todayISO().slice(0,7);
+  const ventesMois = DB.ventes.filter(v=>v.date.startsWith(moisPrefix));
+  const caMois = ventesMois.reduce((s,v)=>s+v.total,0);
+  const coutVenduMois = ventesMois.reduce((s,v)=>s+v.coutTotal,0);
+  const chargesMois = DB.charges.filter(ch=>ch.date.startsWith(moisPrefix)).reduce((s,ch)=>s+ch.montant,0);
+  const salairesMois = DB.personnel.reduce((s,p)=>s+(parseFloat(p.salaire)||0),0);
+  const margeBrute = caMois - coutVenduMois;
+  const resultatNet = margeBrute - chargesMois - salairesMois;
+
+  c.innerHTML = `
+    <div class="grid-kpi">
+      <div class="kpi"><div class="lbl">CA du mois</div><div class="val">${fmtMoney(caMois)}</div></div>
+      <div class="kpi rose"><div class="lbl">Coût des ventes</div><div class="val">${fmtMoney(coutVenduMois)}</div></div>
+      <div class="kpi or"><div class="lbl">Marge brute</div><div class="val">${fmtMoney(margeBrute)}</div><div class="sub">${caMois? Math.round(margeBrute/caMois*100):0}% du CA</div></div>
+      <div class="kpi bleu"><div class="lbl">Résultat net (estimé)</div><div class="val">${fmtMoney(resultatNet)}</div><div class="sub">après charges & salaires</div></div>
+    </div>
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-head"><h3>Charges & dépenses</h3><button class="btn small" onclick="formCharge()">+ Ajouter une charge</button></div>
+        <div class="panel-body" style="padding-top:0;">
+          <table><thead><tr><th>Date</th><th>Libellé</th><th>Catégorie</th><th>Montant</th></tr></thead>
+          <tbody>${[...DB.charges].reverse().map(ch=>`<tr><td>${ch.date}</td><td>${esc(ch.libelle)}</td><td><span class="tag neutral">${esc(ch.categorie)}</span></td><td class="num-cell">${fmtMoney(ch.montant)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty-row">Aucune charge enregistrée.</td></tr>'}</tbody></table>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Répartition du mois</h3></div>
+        <div class="panel-body">
+          <div class="stat-mini"><span>Chiffre d'affaires</span><b class="num-cell">${fmtMoney(caMois)}</b></div>
+          <div class="stat-mini"><span>− Coût matières (COGS)</span><b class="num-cell">${fmtMoney(coutVenduMois)}</b></div>
+          <div class="stat-mini"><span>− Charges diverses</span><b class="num-cell">${fmtMoney(chargesMois)}</b></div>
+          <div class="stat-mini"><span>− Masse salariale</span><b class="num-cell">${fmtMoney(salairesMois)}</b></div>
+          <div class="stat-mini" style="font-size:15px;margin-top:6px;"><b>= Résultat net</b><b class="num-cell">${fmtMoney(resultatNet)}</b></div>
+        </div>
+      </div>
+    </div>
+  `;
+};
+function formCharge(){
+  const body = `
+    <div class="field"><label>Libellé</label><input id="ch_libelle" placeholder="Ex. Loyer, électricité..."></div>
+    <div class="field-row">
+      <div class="field"><label>Montant</label><input id="ch_montant" type="number" step="0.01" value="0"></div>
+      <div class="field"><label>Catégorie</label><select id="ch_categorie"><option>Loyer</option><option>Énergie</option><option>Marketing</option><option>Maintenance</option><option>Autre</option></select></div>
+    </div>`;
+  const foot = `<button class="btn secondary" onclick="closeModal()">Annuler</button><button class="btn" onclick="saveCharge()">Enregistrer</button>`;
+  openModal('Nouvelle charge', body, foot);
+}
+function saveCharge(){
+  const libelle = document.getElementById('ch_libelle').value.trim();
+  const montant = parseFloat(document.getElementById('ch_montant').value)||0;
+  if(!libelle||montant<=0){ showToast('Complétez le libellé et le montant'); return; }
+  DB.charges.push({id:uid(), date:todayISO(), libelle, montant, categorie:document.getElementById('ch_categorie').value});
+  saveDB(); closeModal(); renderAll(); showToast('Charge enregistrée');
+}
+
+/* ---------------- PERSONNEL ---------------- */
+RENDERERS.personnel = (c)=>{
+  c.innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><h3>Équipe (${DB.personnel.length})</h3><button class="btn" onclick="formPersonnel()">+ Nouvel employé</button></div>
+      <div class="panel-body" style="padding-top:0;">
+        <table><thead><tr><th>Nom</th><th>Poste</th><th>Téléphone</th><th>Salaire mensuel</th><th></th></tr></thead>
+        <tbody>${DB.personnel.map(p=>`<tr><td><b>${esc(p.nom)}</b></td><td>${esc(p.poste)}</td><td>${esc(p.telephone||'—')}</td>
+          <td class="num-cell">${fmtMoney(p.salaire)}</td><td><button class="btn small secondary" onclick="formPersonnel('${p.id}')">Modifier</button></td></tr>`).join('') || '<tr><td colspan="5" class="empty-row">Aucun employé enregistré.</td></tr>'}</tbody></table>
+      </div>
+    </div>
+  `;
+};
+function formPersonnel(id){
+  const p = id ? DB.personnel.find(x=>x.id===id) : {nom:'', poste:'', telephone:'', salaire:0};
+  const body = `
+    <div class="field"><label>Nom</label><input id="pe_nom" value="${esc(p.nom)}"></div>
+    <div class="field-row">
+      <div class="field"><label>Poste</label><input id="pe_poste" value="${esc(p.poste)}" placeholder="Ex. Glacier, Vendeur..."></div>
+      <div class="field"><label>Téléphone</label><input id="pe_tel" value="${esc(p.telephone||'')}"></div>
+    </div>
+    <div class="field"><label>Salaire mensuel</label><input id="pe_salaire" type="number" step="0.01" value="${p.salaire}"></div>`;
+  const foot = `<button class="btn secondary" onclick="closeModal()">Annuler</button><button class="btn" onclick="savePersonnel('${id||''}')">Enregistrer</button>`;
+  openModal(id?'Modifier l\'employé':'Nouvel employé', body, foot);
+}
+function savePersonnel(id){
+  const nom = document.getElementById('pe_nom').value.trim();
+  if(!nom){ showToast('Le nom est requis'); return; }
+  const data = {nom, poste:document.getElementById('pe_poste').value, telephone:document.getElementById('pe_tel').value, salaire:parseFloat(document.getElementById('pe_salaire').value)||0};
+  if(id){ Object.assign(DB.personnel.find(x=>x.id===id), data); } else { DB.personnel.push({id:uid(), ...data, dateEmbauche:todayISO()}); }
+  saveDB(); closeModal(); renderAll(); showToast('Employé enregistré');
+}
+
+/* ---------------- RAPPORTS ---------------- */
+RENDERERS.rapports = (c)=>{
+  const parRecette = {};
+  DB.ventes.forEach(v=>v.lignes.forEach(l=>{
+    parRecette[l.recetteId] = parRecette[l.recetteId] || {qty:0, ca:0};
+    parRecette[l.recetteId].qty += l.qty; parRecette[l.recetteId].ca += l.sousTotal;
+  }));
+  const classement = Object.entries(parRecette).sort((a,b)=>b[1].ca-a[1].ca);
+  const valeurStockMP = DB.stockMP.reduce((s,m)=>s+m.quantite*m.coutUnitaire,0);
+  const valeurStockPF = DB.stockPF.reduce((s,l)=>s+l.quantite*l.coutUnitaire,0);
+
+  c.innerHTML = `
+    <div class="grid-kpi">
+      <div class="kpi"><div class="lbl">Valeur stock matières</div><div class="val">${fmtMoney(valeurStockMP)}</div></div>
+      <div class="kpi or"><div class="lbl">Valeur stock produits finis</div><div class="val">${fmtMoney(valeurStockPF)}</div></div>
+      <div class="kpi rose"><div class="lbl">Ventes enregistrées</div><div class="val">${DB.ventes.length}</div></div>
+      <div class="kpi bleu"><div class="lbl">Clients fidèles</div><div class="val">${DB.clients.length}</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>Classement des saveurs (toutes périodes)</h3></div>
+      <div class="panel-body" style="padding-top:0;">
+        <table><thead><tr><th>#</th><th>Saveur</th><th>Volume vendu</th><th>CA généré</th></tr></thead>
+        <tbody>${classement.map(([rid,d],i)=>{const r=recette(rid);return `<tr><td>${i+1}</td>
+          <td class="flex gap6"><span class="flavor-dot" style="background:${r?r.couleur:'#ccc'}"></span>${esc(r?r.nom:'?')}</td>
+          <td class="num-cell">${fmtNum(d.qty)}</td><td class="num-cell">${fmtMoney(d.ca)}</td></tr>`;}).join('') || '<tr><td colspan="4" class="empty-row">Pas encore de données de vente.</td></tr>'}</tbody></table>
+      </div>
+    </div>
+  `;
+};
+
+/* ---------------- PARAMETRES ---------------- */
+RENDERERS.parametres = (c)=>{
+  const p = DB.parametres;
+  c.innerHTML = `
+    <div class="panel">
+      <div class="panel-head"><h3>Entreprise</h3></div>
+      <div class="panel-body">
+        <div class="field"><label>Nom de la glacerie</label><input id="pm_nom" value="${esc(p.nomEntreprise)}"></div>
+        <div class="field-row">
+          <div class="field"><label>Devise</label>
+            <select id="pm_devise_code" onchange="document.getElementById('pm_devise_perso_wrap').style.display = this.value==='AUTRE' ? 'flex' : 'none';">
+              ${CURRENCIES.map(cur=>`<option value="${cur.code}" ${((p.deviseCode||'MGA')===cur.code)?'selected':''}>${cur.label}${cur.symbol?' ('+cur.symbol+')':''}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field"><label>Taux de TVA (%)</label><input id="pm_tva" type="number" step="0.1" value="${p.tauxTVA}"></div>
+        </div>
+        <div class="field" id="pm_devise_perso_wrap" style="display:${(p.deviseCode||'MGA')==='AUTRE'?'flex':'none'};">
+          <label>Symbole personnalisé</label><input id="pm_devise_perso" value="${esc(p.deviseSymbolePerso||'')}" placeholder="Ex. Ar, R$, Rs...">
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Coefficient de marge (prix conseillé = coût × coeff.)</label><input id="pm_coeff" type="number" step="0.1" value="${p.coefficientMarge}"></div>
+          <div class="field"><label>Point fidélité pour 1 € dépensé</label><input id="pm_fidelite" type="number" step="0.1" value="${p.tauxFidelite}"></div>
+        </div>
+        <div class="field"><label>Alerte DLC (jours avant expiration)</label><input id="pm_dlc" type="number" value="${p.seuilDLCAlerteJours}"></div>
+        <button class="btn" onclick="saveParametres()">Enregistrer les paramètres</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>Données</h3></div>
+      <div class="panel-body">
+        <p class="muted" style="font-size:13px;">Toutes les données sont enregistrées automatiquement dans votre espace personnel à chaque action.</p>
+        <button class="btn secondary" onclick="exporterDonnees()">Exporter les données (JSON)</button>
+      </div>
+    </div>
+  `;
+};
+function saveParametres(){
+  DB.parametres.nomEntreprise = document.getElementById('pm_nom').value || 'Ma Glacerie';
+  DB.parametres.deviseCode = document.getElementById('pm_devise_code').value || 'MGA';
+  DB.parametres.deviseSymbolePerso = document.getElementById('pm_devise_perso').value || '';
+  DB.parametres.tauxTVA = parseFloat(document.getElementById('pm_tva').value)||0;
+  DB.parametres.coefficientMarge = parseFloat(document.getElementById('pm_coeff').value)||3;
+  DB.parametres.tauxFidelite = parseFloat(document.getElementById('pm_fidelite').value)||1;
+  DB.parametres.seuilDLCAlerteJours = parseInt(document.getElementById('pm_dlc').value)||7;
+  document.getElementById('brandName').textContent = DB.parametres.nomEntreprise;
+  saveDB(); renderAll(); showToast('Paramètres enregistrés');
+}
+function exporterDonnees(){
+  const blob = new Blob([JSON.stringify(DB,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'gelato_erp_export.json'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ---------------- INIT ---------------- */
+(async function init(){
+  await loadDB();
+  document.getElementById('brandName').textContent = DB.parametres.nomEntreprise;
+  tickClock();
+  renderAll();
+  if(storageMode==='memory'){ showToast('⚠ Stockage indisponible : les données ne seront pas conservées après fermeture'); }
+})();
+</script>
+</body>
+</html>
