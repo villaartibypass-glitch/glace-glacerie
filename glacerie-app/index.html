@@ -1263,7 +1263,12 @@ RENDERERS.parametres = (c)=>{
       <div class="panel-head"><h3>Données</h3></div>
       <div class="panel-body">
         <p class="muted" style="font-size:13px;">Toutes les données sont enregistrées automatiquement dans votre espace personnel à chaque action.</p>
-        <button class="btn secondary" onclick="exporterDonnees()">Exporter les données (JSON)</button>
+        <div class="flex gap8" style="flex-wrap:wrap;">
+          <button class="btn secondary" onclick="exporterDonnees()">Exporter les données (JSON)</button>
+          <button class="btn secondary" onclick="document.getElementById('importFile').click()">Importer / restaurer (JSON)</button>
+        </div>
+        <input id="importFile" type="file" accept=".json,application/json,text/plain" style="display:none" onchange="importerDonnees(this)">
+        <p class="hint" style="margin-top:8px;">L'import remplace toutes les données actuelles par celles du fichier. Exportez d'abord si vous voulez garder une copie.</p>
       </div>
     </div>
   `;
@@ -1284,6 +1289,33 @@ function exporterDonnees(){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = 'gelato_erp_export.json'; a.click();
   URL.revokeObjectURL(url);
+}
+
+function importerDonnees(input){
+  const file = input.files && input.files[0];
+  input.value = '';
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onerror = ()=> showToast('⚠ Lecture du fichier impossible');
+  reader.onload = async ()=>{
+    let data;
+    try{ data = JSON.parse(reader.result); }
+    catch(e){ showToast('⚠ Fichier invalide : ce n\'est pas un JSON'); return; }
+    const ref = defaultDB();
+    const ok = data && typeof data==='object' && !Array.isArray(data) &&
+      Object.keys(ref).some(k=>Array.isArray(ref[k]) && Array.isArray(data[k])) && data.parametres && typeof data.parametres==='object';
+    if(!ok){ showToast('⚠ Ce fichier n\'est pas un export Gelato ERP'); return; }
+    if(!confirm('Remplacer toutes les données actuelles par celles de « '+file.name+' » ?\nCette action est irréversible.')) return;
+    DB = data;
+    DB.charges = DB.charges || [];
+    DB.personnel = DB.personnel || [];
+    DB.parametres = Object.assign({}, ref.parametres, DB.parametres);
+    await saveDB(true);
+    document.getElementById('brandName').textContent = DB.parametres.nomEntreprise;
+    renderAll();
+    showToast('Données restaurées');
+  };
+  reader.readAsText(file);
 }
 
 /* ---------------- INIT ---------------- */
