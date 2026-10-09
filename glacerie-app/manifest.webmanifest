@@ -1,0 +1,16 @@
+{
+  "name": "Gelato ERP — Gestion de glacerie",
+  "short_name": "Glacerie",
+  "description": "Gestion de glacerie : stocks, recettes, ventes, finances.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF6EF",
+  "theme_color": "#3B2A22",
+  "lang": "fr",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
