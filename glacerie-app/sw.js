@@ -1,5 +1,5 @@
 // Cache-first pour un fonctionnement hors-ligne ; changer VERSION pour forcer une mise à jour.
-const VERSION = 'glacerie-v1';
+const VERSION = 'glacerie-v2';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
